@@ -495,14 +495,14 @@ const PollPage: React.FC = () => {
 
   return (
     <div className="bg-poll-dark text-poll-grey-100">
-      <div className="w-full text-center pt-12 pb-8">
-        <h1 className="text-4xl font-bold mb-2">
-          Poll<span className="text-[#14b8a6]">.it</span>
-        </h1>
-        <p className="text-poll-grey-400">
-          Real-time polling and community engagement
-        </p>
-      </div>
+      <div className="w-full text-center py-14">
+      <h1 className="text-6xl font-bold mb-2">
+        Poll<span className="text-[#14b8a6]">.it</span>
+      </h1>
+      <p className="text-poll-grey-400 text-2xl">
+        Engaging polls and real-time insights from your community
+      </p>
+    </div>
 
       <div className="container max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 px-4 pb-8">
         {/* Poll Display Section (2/3 width) */}
