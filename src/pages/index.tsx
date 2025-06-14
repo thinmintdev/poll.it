@@ -42,8 +42,8 @@ const HomePage: React.FC = () => (
       </div>
 
       {/* Live Polls Section */}
-      <div className="w-full lg:w-1/2 lg:sticky lg:top-20 self-start">
-        <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg p-6 h-[calc(100vh-280px)] flex flex-col">
+      <div className="w-full lg:w-1/2 lg:sticky lg:top-20 self-start mb-8">
+        <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg p-6 h-[calc(50vh)] flex flex-col">
           <div className="flex items-center justify-between mb-6 flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-poll-orange-400">

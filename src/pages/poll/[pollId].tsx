@@ -103,13 +103,13 @@ function BarChart({ data, title, className, orientation = "vertical" }: any) {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "top",
+        position: "right" as const,
         labels: {
           color: "#cbd5e1",
           padding: 20,
           font: { size: 12 },
           usePointStyle: true,
-          pointStyle: "circle",
+          boxWidth: 10,
         },
       },
       tooltip: {
@@ -292,27 +292,88 @@ const PollPage: React.FC = () => {
 
   // Chart data
   const chartData = {
-    labels: choices.map((c) => c.text),
-    datasets: [
-      {
-        label: "Votes",
-        data: choices.map((c) => votes.filter((v) => String(v.choice_id) === String(c.id)).length),
-        backgroundColor: [
-          "#3b82f6",
-          "#f59e42",
-          "#10b981",
-          "#f43f5e",
-          "#6366f1",
-          "#fbbf24",
-          "#a21caf",
-          "#14b8a6",
-        ],
-      },
-    ],
+    labels: ["Votes"],
+    datasets: choices.map((choice, index) => ({
+      label: choice.text,
+      data: [votes.filter(v => String(v.choice_id) === String(choice.id)).length],
+      backgroundColor: "#14b8a6 #f97316 #ef4444 #3b82f6 #64748b #0d9488 #ea580c #dc2626".split(" ")[index % 8],
+      borderColor: "#0d9488 #ea580c #dc2626 #2563eb #475569 #0f766e #c2410c #b91c1c".split(" ")[index % 8],
+      borderWidth: 2,
+      borderRadius: 6,
+    })),
   };
 
-  // Debug chart data
-  console.log('chartData', chartData);
+  const chartOptions: ChartOptions<'bar'> = {
+    indexAxis: 'x',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        align: 'start',
+        labels: {
+          color: "#cbd5e1",
+          padding: 20,
+          font: { size: 12 },
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 10
+        }
+      }
+    },
+    scales: {
+      x: {
+        display: false,
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: "#374151" },
+        ticks: { 
+          color: "#9ca3af", 
+          font: { size: 11 },
+          stepSize: 1
+        },
+        afterDataLimits: (axis: any) => {
+          axis.max = axis.max * 1.1 + 1;
+        }
+      }
+    }
+  };
+
+  // Specific options for bar chart
+  const barChartOptions: ChartOptions<'bar'> = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right' as const,
+        align: 'start' as const,
+        labels: {
+          color: "#cbd5e1",
+          padding: 20,
+          font: { size: 12 },
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 10
+        }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        grid: { color: "#374151" },
+        ticks: { 
+          color: "#9ca3af", 
+          font: { size: 11 },
+          stepSize: 1
+        }
+      },
+      y: {
+        display: false
+      }
+    }
+  };
 
   // Emoji picker
   const handleEmojiSelect = (emoji: any) => {
@@ -473,23 +534,8 @@ const PollPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-6">
-                  <div>
-                    <h3 className="text-white text-xl font-semibold mb-2">{poll.question}</h3>
-                    <div className="flex items-center gap-4 text-sm text-poll-grey-400">
-                      <span className="flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                          <circle cx="9" cy="7" r="4" />
-                          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                        {votes.length} votes
-                      </span>
-                    </div>
-                  </div>
-
                   {/* Chart Toggle */}
-                  <div className="flex justify-center gap-2">
+                  <div className="flex justify-center gap-2 mb-6">
                     <button
                       type="button"
                       className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-colors border focus:outline-none focus:ring-2 focus:ring-poll-blue-400 ${showBar ? 'bg-poll-blue-500 text-white border-poll-blue-600 shadow' : 'bg-poll-grey-900 text-poll-grey-300 border-poll-grey-700 hover:bg-poll-grey-800'}`}
@@ -506,38 +552,23 @@ const PollPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Chart */}
-                  <div className="bg-poll-grey-900/50 rounded-lg p-4">
+                  {/* Chart Display */}
+                  <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg p-6">
                     {chartData.datasets[0].data.every((v: number) => v === 0) ? (
                       <div className="text-poll-grey-500 text-center py-8">No votes yet</div>
                     ) : showBar ? (
-                      <Bar
-                        data={{
-                          labels: choices.map(c => c.text),
-                          datasets: [{
-                            label: "Votes",
-                            data: choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length),
-                          }],
-                        }}
-                        options={{
-                          scales: {
-                            y: {
-                              beginAtZero: true,
-                              ticks: {
-                                stepSize: 1,
-                              },
-                              suggestedMax: Math.max(...choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length)) + 1,
-                            }
-                          }
-                        }}
-                      />
+                      <div className="h-80">
+                        <Bar data={chartData} options={barChartOptions} />
+                      </div>
                     ) : (
-                      <PieChart
-                        data={{
-                          labels: choices.map(c => c.text),
-                          values: choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length),
-                        }}
-                      />
+                      <div className="h-80">
+                        <PieChart
+                          data={{
+                            labels: choices.map(c => c.text),
+                            values: choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length),
+                          }}
+                        />
+                      </div>
                     )}
                   </div>
 
@@ -600,8 +631,8 @@ const PollPage: React.FC = () => {
         </div>
 
         {/* Chat Section (1/3 width) */}
-        <div className="w-full lg:w-1/3 lg:sticky lg:top-20 self-start">
-          <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg h-[calc(100vh-240px)] flex flex-col">
+        <div className="w-full lg:w-1/3 lg:sticky lg:top-20 self-start mb-8">
+          <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg h-[calc(50vh)] flex flex-col">
             {/* Chat Header */}
             <div className="p-4 border-b border-poll-grey-700">
               <div className="flex items-center justify-between">

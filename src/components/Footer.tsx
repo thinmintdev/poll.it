@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { HeartIcon, CodeBracketIcon } from "@heroicons/react/24/outline";
 import { Separator } from "./ui/separator";
+import { BracketsIcon } from "lucide-react";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -23,8 +24,11 @@ const Footer: React.FC = () => {
             <div className="flex items-center gap-2 mt-4 text-poll-grey-400">
               <span>Made with</span>
               <HeartIcon className="w-4 h-4 text-red-500" />
-              <span>by developers</span>
-              <CodeBracketIcon className="w-4 h-4 text-[#14b8a6]" />
+              <span>by</span>
+              <span className="flex items-center gap-1"> 
+                <BracketsIcon className="w-4 h-4 text-[#0253cf]" />
+                <a href="https://awideweb.com" target="_blank" rel="noopener noreferrer" className="text-[#0253cf] hover:underline">aWideWeb</a></span>
+              
             </div>
           </div>
 
