@@ -160,7 +160,7 @@ async function getPolls(req: NextApiRequest, res: NextApiResponse, supabase: any
         created_at,
         updated_at,
         categories:category_id (name),
-        choices (id, text)
+        choices (id, text, votes)
       `)
       .order('created_at', { ascending: false });
     
@@ -181,7 +181,7 @@ async function getPolls(req: NextApiRequest, res: NextApiResponse, supabase: any
             created_at,
             updated_at,
             categories:category_id (name),
-            choices (id, text)
+            choices (id, text, votes)
           `)
           .order('created_at', { ascending: false });
           
@@ -255,7 +255,8 @@ async function createPoll(req: NextApiRequest, res: NextApiResponse, supabase: a
     // Now create the choices for this poll
     const choiceRows = choices.map(text => ({
       poll_id: poll.id,
-      text
+      text,
+      votes: 0
     }));
     
     const { error: choicesError } = await supabase
