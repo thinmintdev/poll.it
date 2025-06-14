@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { supabase } from "../utils/supabaseClient";
 import { ChevronDownIcon, ArrowRightOnRectangleIcon, UserCircleIcon, Cog6ToothIcon, MoonIcon, SunIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import LoginForm from "./LoginForm";
 
 const Header: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -11,9 +12,11 @@ const Header: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
   const [theme, setTheme] = useState<string>("light");
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const loginDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkSessionAndAdmin = async () => {
@@ -38,20 +41,24 @@ const Header: React.FC = () => {
     checkSessionAndAdmin();
   }, [router.pathname]);
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (loginDropdownRef.current && !loginDropdownRef.current.contains(e.target as Node)) {
+        setLoginDropdownOpen(false);
+      }
     };
-    if (dropdownOpen) {
+    
+    if (dropdownOpen || loginDropdownOpen) {
       document.addEventListener("mousedown", handleClick);
     } else {
       document.removeEventListener("mousedown", handleClick);
     }
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [dropdownOpen]);
+  }, [dropdownOpen, loginDropdownOpen]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -86,6 +93,12 @@ const Header: React.FC = () => {
     }
   };
 
+  // Handle successful login
+  const onLoginSuccess = () => {
+    setLoginDropdownOpen(false);
+    router.push(router.pathname); // Refresh the current page to update session state
+  };
+
   return (
     <header className="w-full fixed top-0 left-0 z-50 bg-poll-dark/80 backdrop-blur border-b border-poll-grey-700">
       <nav className="container max-w-6xl mx-auto flex items-center justify-between py-3 px-4">
@@ -94,16 +107,24 @@ const Header: React.FC = () => {
         </Link>
         <div className="flex items-center gap-4">
           
-          {/* Show Login if not logged in */}
+          {/* Login dropdown if not logged in */}
           {!loading && !session && (
-            <Link 
-              href="/login" 
-              className="px-4 py-2 rounded-lg bg-[#14b8a6] text-white font-medium hover:bg-[#0d9488] transition-colors focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:ring-offset-2 focus:ring-offset-poll-dark"
-              aria-label="Login"
-            >
-              Login
-            </Link>
+            <div className="relative" ref={loginDropdownRef}>
+              <button 
+                className="px-4 py-2 rounded-lg bg-[#14b8a6] text-white font-medium hover:bg-[#0d9488] transition-colors focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:ring-offset-2 focus:ring-offset-poll-dark flex items-center gap-1"
+                aria-label="Open login form"
+                onClick={() => setLoginDropdownOpen(!loginDropdownOpen)}
+              >
+                Login <ChevronDownIcon className="w-4 h-4 ml-1" />
+              </button>
+              {loginDropdownOpen && (
+                <div className="absolute right-0 mt-3 w-72 bg-poll-dark border-b border-l border-r border-poll-grey-700 rounded-bl-lg shadow-lg pb-4 z-50 animate-fade-in-and-out duration-500">
+                  <LoginForm inDropdown onLoginSuccess={onLoginSuccess} />
+                </div>
+              )}
+            </div>
           )}
+          
           {/* User avatar and dropdown if logged in */}
           {!loading && session && profile && (
             <div className="relative" ref={dropdownRef}>
@@ -131,7 +152,7 @@ const Header: React.FC = () => {
                   </div>
                   <Link
                     href="/profile"
-                    className="block px-4 py-2 text-poll-grey-100 hover:bg-poll-grey-800/50 flex items-center gap-2 transition-colors"
+                    className="px-4 py-2 text-poll-grey-100 hover:bg-poll-grey-800/50 flex items-center gap-2 transition-colors"
                     onClick={() => setDropdownOpen(false)}
                   >
                     <UserCircleIcon className="w-5 h-5" /> Profile
@@ -139,7 +160,7 @@ const Header: React.FC = () => {
                   {isAdmin && (
                     <Link
                       href="/admin"
-                      className="block px-4 py-2 text-poll-grey-100 hover:bg-poll-grey-800/50 flex items-center gap-2 transition-colors"
+                      className="px-4 py-2 text-poll-grey-100 hover:bg-poll-grey-800/50 flex items-center gap-2 transition-colors"
                       onClick={() => setDropdownOpen(false)}
                     >
                       <Cog6ToothIcon className="w-5 h-5" /> Admin Panel

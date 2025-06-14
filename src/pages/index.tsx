@@ -62,8 +62,8 @@ const HomePage: React.FC = () => (
                   <path d="m8 11-4 2 4 2" />
                 </svg>
               </span>
-              <h2 className="text-3xl font-semibold">Live Polls</h2>
-              <span className="text-sm text-gray-400 ml-2">(Last 24h)</span>
+              <h2 className="text-3xl font-semibold">Recent Polls</h2>
+              
             </div>
             <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-[#14b8a6]/50 text-white border-[#14b8a6]/80">
               LIVE
