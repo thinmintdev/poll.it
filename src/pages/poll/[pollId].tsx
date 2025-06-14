@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react"; // Added useCallback
 import { useRouter } from "next/router";
 import { supabase } from "../../utils/supabaseClient";
 import {
@@ -132,7 +132,15 @@ function BarChart({ data, title, className, orientation = "vertical" }: any) {
       y: {
         beginAtZero: true,
         grid: { color: "#374151" },
-        ticks: { color: "#9ca3af", font: { size: 11 } },
+        ticks: { 
+          color: "#9ca3af", 
+          font: { size: 11 },
+          stepSize: 1, // Ensure y-axis increments by 1
+        },
+        // Calculate max Y value to add padding
+        afterDataLimits: (axis: any) => {
+          axis.max = axis.max * 1.1 +1; // Add 10% padding and ensure at least 1 unit above max
+        }
       },
     },
     elements: { bar: { borderWidth: 2 } },
@@ -172,6 +180,29 @@ const PollPage: React.FC = () => {
   const [pollPassword, setPollPassword] = useState<string | null>(null);
   const [chatSidebarOpen, setChatSidebarOpen] = useState(true);
   const [chatSidebarMinimized, setChatSidebarMinimized] = useState(false);
+
+  // Fetch votes and chat as functions for reuse
+  const fetchVotes = useCallback(async () => {
+    if (!pollId) return; // Added guard for pollId
+    const { data: votesData, error } = await supabase
+      .from("votes")
+      .select("id, choice_id, user_id, profiles(display_name)")
+      .eq("poll_id", pollId);
+    if (error) console.error('Votes fetch error:', error);
+    setVotes(votesData || []);
+    console.log('votes', votesData);
+  }, [pollId]);
+  const fetchChat = useCallback(async () => {
+    if (!pollId) return; // Added guard for pollId
+    const { data: chatData, error } = await supabase
+      .from("chat_messages")
+      .select("id, user_id, message, created_at, profiles(display_name)")
+      .eq("poll_id", pollId)
+      .order("created_at");
+    if (error) console.error('Chat fetch error:', error);
+    setChat(chatData || []);
+    console.log('chat', chatData);
+  }, [pollId]);
 
   // Fetch poll, choices, votes, chat, and user
   useEffect(() => {
@@ -220,28 +251,7 @@ const PollPage: React.FC = () => {
       console.log('choices', choicesData);
     };
     fetchData();
-  }, [pollId]);
-
-  // Fetch votes and chat as functions for reuse
-  const fetchVotes = async () => {
-    const { data: votesData, error } = await supabase
-      .from("votes")
-      .select("id, choice_id, user_id, profiles(display_name)")
-      .eq("poll_id", pollId);
-    if (error) console.error('Votes fetch error:', error);
-    setVotes(votesData || []);
-    console.log('votes', votesData);
-  };
-  const fetchChat = async () => {
-    const { data: chatData, error } = await supabase
-      .from("chat_messages")
-      .select("id, user_id, message, created_at, profiles(display_name)")
-      .eq("poll_id", pollId)
-      .order("created_at");
-    if (error) console.error('Chat fetch error:', error);
-    setChat(chatData || []);
-    console.log('chat', chatData);
-  };
+  }, [pollId, fetchVotes, fetchChat]); // Added fetchVotes and fetchChat
 
   // Supabase Realtime for votes and chat
   useEffect(() => {
@@ -268,7 +278,7 @@ const PollPage: React.FC = () => {
       supabase.removeChannel(votesChannel);
       supabase.removeChannel(chatChannel);
     };
-  }, [pollId]);
+  }, [pollId, fetchVotes, fetchChat]); // Added fetchVotes and fetchChat
 
   // Check if user has voted (by user id if available, else localStorage)
   useEffect(() => {
@@ -388,7 +398,7 @@ const PollPage: React.FC = () => {
               value={passwordInput}
               onChange={e => setPasswordInput(e.target.value)}
               aria-label="Poll password"
-              autoFocus
+              // autoFocus // Removed autoFocus
             />
             {passwordError && <div className="text-red-600 text-sm">{passwordError}</div>}
             <button
