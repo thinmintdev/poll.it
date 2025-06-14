@@ -64,14 +64,14 @@ const RecentPolls: React.FC = () => {
     fetchPolls();
     const interval = setInterval(fetchPolls, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isScrollInitialized]);
 
   // Initialize scroll container
   useEffect(() => {
     if (scrollContainerRef.current && !isScrollInitialized) {
       setIsScrollInitialized(true);
     }
-  }, []);
+  }, [isScrollInitialized]);
 
   // Auto-scroll effect
   useEffect(() => {
@@ -159,12 +159,6 @@ const RecentPolls: React.FC = () => {
         WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 20px, black calc(100% - 20px), transparent)'
       }}
     >
-      <style jsx global>{`
-        div[class*="overflow-y-scroll"]::-webkit-scrollbar {
-          display: none !important;
-        }
-      `}</style>
-      
       {loading ? (
         <div className="text-gray-400 text-center py-8">Loading polls...</div>
       ) : polls.length === 0 ? (
@@ -181,8 +175,16 @@ const RecentPolls: React.FC = () => {
             return (
               <div
                 key={poll.id}
+                role="button"
+                tabIndex={0}
                 className="rounded-lg bg-[#1e2736] border border-[#2f3a4e] hover:border-[#14b8a6]/50 hover:bg-[#1e2736]/80 p-4 transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5"
                 onClick={() => router.push(`/poll/${poll.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    router.push(`/poll/${poll.id}`);
+                  }
+                }}
               >
                 {/* Poll Header */}
                 <div className="mb-4">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "../../utils/supabaseClient";
 import {
   Squares2X2Icon,
@@ -49,7 +49,7 @@ const CategoryTabs: React.FC<{ session: any }> = ({ session }) => {
   const [editLoading, setEditLoading] = useState(false);
 
   // Fetch categories
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setLoading(true);
     setError("");
     const res = await fetch("/api/admin/categories", {
@@ -62,9 +62,13 @@ const CategoryTabs: React.FC<{ session: any }> = ({ session }) => {
       setCategories(await res.json());
     }
     setLoading(false);
-  };
+  }, [session?.access_token]);
 
-  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => { 
+    if (session?.access_token) {
+      fetchCategories(); 
+    }
+  }, [fetchCategories, session?.access_token]);
 
   // Add category
   const handleAdd = async (e: React.FormEvent) => {
@@ -194,8 +198,9 @@ const CategoryTabs: React.FC<{ session: any }> = ({ session }) => {
       {/* Add Category */}
       {tab === 1 && (
         <form onSubmit={handleAdd} className="bg-card dark:bg-poll-darker rounded shadow p-6 max-w-md border border-border">
-          <label className="block mb-2 font-medium">Category Name</label>
+          <label htmlFor="category-name" className="block mb-2 font-medium">Category Name</label>
           <input
+            id="category-name"
             type="text"
             className="border rounded p-2 w-full mb-4"
             value={newCategory}
@@ -307,7 +312,7 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
   const [users, setUsers] = useState<{ id: string; username: string }[]>([]);
 
   // Fetch polls
-  const fetchPolls = async () => {
+  const fetchPolls = useCallback(async () => {
     setLoading(true);
     setError("");
     const res = await fetch("/api/admin/polls", {
@@ -321,18 +326,18 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
       setPolls(data.polls || []);
     }
     setLoading(false);
-  };
+  }, [session?.access_token]);
 
   // Fetch categories
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const res = await fetch("/api/admin/categories", {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
     if (res.ok) setCategories(await res.json());
-  };
+  }, [session?.access_token]);
 
   // Fetch users
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     const res = await fetch("/api/admin/users", {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
@@ -340,7 +345,7 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
       const data = await res.json();
       setUsers(data.users || []);
     }
-  };
+  }, [session?.access_token]);
 
   useEffect(() => {
     fetchPolls();
@@ -520,7 +525,6 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
                       <button
                         className="text-blue-600 mr-4"
                         onClick={() => startEdit(poll)}
-                        role="button"
                         tabIndex={0}
                         onKeyDown={e => {
                           if (e.key === 'Enter' || e.key === ' ') startEdit(poll);
@@ -529,7 +533,6 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
                       <button
                         className="text-red-600"
                         onClick={() => handleDelete(poll.id)}
-                        role="button"
                         tabIndex={0}
                         onKeyDown={e => {
                           if (e.key === 'Enter' || e.key === ' ') handleDelete(poll.id);
@@ -595,8 +598,9 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
           >
             + Add another choice
           </button>
-          <label className="block mb-2 font-medium">Category</label>
+          <label htmlFor="add-category" className="block mb-2 font-medium">Category</label>
           <select
+            id="add-category"
             className="border rounded p-2 w-full mb-4"
             value={addForm.category_id}
             onChange={e => setAddForm(f => ({ ...f, category_id: e.target.value }))}
@@ -607,8 +611,9 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
-          <label className="block mb-2 font-medium">Visibility</label>
+          <label htmlFor="add-visibility" className="block mb-2 font-medium">Visibility</label>
           <select
+            id="add-visibility"
             className="border rounded p-2 w-full mb-4"
             value={addForm.visibility}
             onChange={e => setAddForm(f => ({ ...f, visibility: e.target.value }))}
@@ -617,8 +622,9 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
             <option value="public">Public</option>
             <option value="private">Private</option>
           </select>
-          <label className="block mb-2 font-medium">Max Choices</label>
+          <label htmlFor="add-max-choices" className="block mb-2 font-medium">Max Choices</label>
           <input
+            id="add-max-choices"
             type="number"
             min={1}
             max={8}
@@ -627,8 +633,9 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
             onChange={e => setAddForm(f => ({ ...f, max_choices: Number(e.target.value) }))}
             required
           />
-          <label className="block mb-2 font-medium">Creator (User)</label>
+          <label htmlFor="add-creator" className="block mb-2 font-medium">Creator (User)</label>
           <select
+            id="add-creator"
             className="border rounded p-2 w-full mb-4"
             value={addForm.user_id}
             onChange={e => setAddForm(f => ({ ...f, user_id: e.target.value }))}
@@ -721,7 +728,7 @@ const ProfileTab: React.FC<{ session: any }> = ({ session }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch profile and polls
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     setLoading(true);
     setError("");
     const res = await fetch("/api/profile", {
@@ -743,7 +750,7 @@ const ProfileTab: React.FC<{ session: any }> = ({ session }) => {
       });
     }
     setLoading(false);
-  };
+  }, [session?.access_token]);
 
   useEffect(() => { fetchProfile(); }, [session, fetchProfile]);
 
@@ -846,10 +853,19 @@ const ProfileTab: React.FC<{ session: any }> = ({ session }) => {
             <div className="flex items-center gap-6 mb-4">
               <div
                 className="w-20 h-20 rounded-full border flex items-center justify-center bg-gray-100 cursor-pointer relative"
+                role="button"
+                tabIndex={0}
                 onDrop={handleAvatarDrop}
                 onDragOver={e => e.preventDefault()}
                 onClick={handleAvatarClick}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleAvatarClick();
+                  }
+                }}
                 title="Drag and drop or click to upload"
+                aria-label="Upload avatar image"
                 style={{ overflow: "hidden" }}
               >
                 <Image
@@ -872,8 +888,9 @@ const ProfileTab: React.FC<{ session: any }> = ({ session }) => {
                 />
               </div>
               <div className="flex-1">
-                <label className="block font-medium mb-1">Avatar URL</label>
+                <label htmlFor="avatar-url" className="block font-medium mb-1">Avatar URL</label>
                 <input
+                  id="avatar-url"
                   type="text"
                   className="border rounded p-2 w-full"
                   value={editForm.avatar_url}
@@ -882,32 +899,36 @@ const ProfileTab: React.FC<{ session: any }> = ({ session }) => {
                 />
               </div>
             </div>
-            <label className="block font-medium mb-1">Display Name</label>
+            <label htmlFor="display-name" className="block font-medium mb-1">Display Name</label>
             <input
+              id="display-name"
               type="text"
               className="border rounded p-2 w-full mb-4"
               value={editForm.display_name}
               onChange={e => setEditForm(f => ({ ...f, display_name: e.target.value }))}
               required
             />
-            <label className="block font-medium mb-1">Username</label>
+            <label htmlFor="username" className="block font-medium mb-1">Username</label>
             <input
+              id="username"
               type="text"
               className="border rounded p-2 w-full mb-4"
               value={editForm.username}
               onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))}
               required
             />
-            <label className="block font-medium mb-1">Bio</label>
+            <label htmlFor="bio" className="block font-medium mb-1">Bio</label>
             <textarea
+              id="bio"
               className="border rounded p-2 w-full mb-4"
               value={editForm.bio}
               onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))}
               rows={3}
               placeholder="A short bio about you..."
             />
-            <label className="block font-medium mb-1">Email</label>
+            <label htmlFor="email" className="block font-medium mb-1">Email</label>
             <input
+              id="email"
               type="text"
               className="border rounded p-2 w-full mb-4 bg-gray-100 cursor-not-allowed"
               value={session.user.email}
@@ -941,8 +962,9 @@ const ProfileTab: React.FC<{ session: any }> = ({ session }) => {
                 {passwordError && <div className="text-red-600 mb-2">{passwordError}</div>}
                 {passwordSuccess && <div className="text-green-600 mb-2">{passwordSuccess}</div>}
                 <form onSubmit={handlePasswordChange}>
-                  <label className="block font-medium mb-1">New Password</label>
+                  <label htmlFor="new-password" className="block font-medium mb-1">New Password</label>
                   <input
+                    id="new-password"
                     type="password"
                     className="border rounded p-2 w-full mb-4"
                     value={password}
@@ -961,7 +983,7 @@ const ProfileTab: React.FC<{ session: any }> = ({ session }) => {
           <div className="bg-white rounded shadow p-6">
             <h3 className="text-xl font-semibold mb-4">My Polls</h3>
             {polls.length === 0 ? (
-              <div className="text-gray-500">You haven't created any polls yet.</div>
+              <div className="text-gray-500">You haven&apos;t created any polls yet.</div>
             ) : (
               <ul className="divide-y">
                 {polls.map((poll) => (
@@ -994,7 +1016,7 @@ const UserAdminPanel: React.FC<{ session: any }> = ({ session }) => {
   const [editLoading, setEditLoading] = useState(false);
 
   // Fetch users (non-admins by default)
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError("");
     const params = new URLSearchParams({ search, page: String(page), limit: String(limit), non_admin: "true" });
@@ -1011,7 +1033,7 @@ const UserAdminPanel: React.FC<{ session: any }> = ({ session }) => {
       setTotal(total);
     }
     setLoading(false);
-  };
+  }, [session?.access_token, search, page, limit]);
 
   useEffect(() => { fetchUsers(); }, [search, page, session, fetchUsers]);
 
@@ -1083,7 +1105,7 @@ const UserAdminPanel: React.FC<{ session: any }> = ({ session }) => {
                 {users.map((user) => (
                   <tr key={user.id} className="border-t">
                     <td className="py-2">
-                      <img src={user.avatar_url || "/default-avatar.png"} alt="avatar" className="w-10 h-10 rounded-full object-cover" />
+                      <Image src={user.avatar_url || "/default-avatar.png"} alt="avatar" width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
                     </td>
                     <td className="py-2">{user.display_name || <span className="text-gray-400">(none)</span>}</td>
                     <td className="py-2">{user.username}</td>
@@ -1150,7 +1172,7 @@ const UserAdminPanel: React.FC<{ session: any }> = ({ session }) => {
             </button>
             <h3 className="text-lg font-semibold mb-4">User Profile</h3>
             <div className="flex items-center gap-4 mb-4">
-              <img src={viewUser.avatar_url || "/default-avatar.png"} alt="avatar" className="w-16 h-16 rounded-full object-cover" />
+              <Image src={viewUser.avatar_url || "/default-avatar.png"} alt="avatar" width={64} height={64} className="w-16 h-16 rounded-full object-cover" />
               <div>
                 <div className="font-bold text-lg">{viewUser.display_name || viewUser.username}</div>
                 <div className="text-gray-500">@{viewUser.username}</div>
