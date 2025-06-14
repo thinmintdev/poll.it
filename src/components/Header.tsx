@@ -93,16 +93,7 @@ const Header: React.FC = () => {
           Poll<span className="text-[#14b8a6]">.it</span>
         </Link>
         <div className="flex items-center gap-4">
-          <button
-            onClick={toggleTheme}
-            className="rounded-full p-2 hover:bg-poll-grey-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#14b8a6] border border-poll-grey-700"
-            aria-label="Toggle dark mode"
-          >
-            {theme === "dark" ? 
-              <SunIcon className="w-5 h-5 text-[#14b8a6]" /> : 
-              <MoonIcon className="w-5 h-5 text-poll-grey-100" />
-            }
-          </button>
+          
           {/* Show Login if not logged in */}
           {!loading && !session && (
             <Link 
