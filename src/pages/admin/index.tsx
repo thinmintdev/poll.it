@@ -18,6 +18,11 @@ import {
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import { cn } from "../../lib/utils";
 
 const SIDEBAR_ITEMS = [
   { label: "Polls", icon: <Squares2X2Icon className="w-6 h-6" aria-hidden="true" /> },
@@ -27,9 +32,9 @@ const SIDEBAR_ITEMS = [
 ] as const;
 type SidebarSection = (typeof SIDEBAR_ITEMS)[number]["label"];
 
-const POLL_TABS = ["All Polls", "Add Poll", "Edit Polls"];
+const POLL_TABS = ["All Polls", "Add Poll"];
 const USER_TABS = ["All Users", "Admins"];
-const CATEGORY_TABS = ["All Categories", "Add Category", "Edit Categories"];
+const CATEGORY_TABS = ["All Categories", "Add Category"];
 
 type Category = { id: string; name: string };
 
@@ -150,117 +155,124 @@ const CategoryTabs: React.FC<{ session: any }> = ({ session }) => {
 
   // Tabs
   const [tab, setTab] = useState(0);
-  const tabs = ["All Categories", "Add Category", "Edit Categories"];
+  const tabs = ["All Categories", "Add Category"];
 
   return (
     <div>
-      <div className="mb-6 flex gap-4 border-b bg-card dark:bg-poll-darker rounded-t-lg p-4">
+      <div className="mb-6 flex gap-4 border-b bg-card rounded-t-lg p-4">
         {tabs.map((t, idx) => (
-          <button
+          <Button
             key={t}
-            className={`pb-2 px-4 font-medium border-b-2 transition-colors ${tab === idx ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-primary"}`}
+            variant="ghost"
+            className={cn(
+              "pb-2 px-4 font-medium border-b-2 transition-colors rounded-none",
+              tab === idx
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-primary"
+            )}
             onClick={() => setTab(idx)}
           >
             {t}
-          </button>
+          </Button>
         ))}
       </div>
-      {error && <div className="text-red-600 mb-2">{error}</div>}
-      {success && <div className="text-green-600 mb-2">{success}</div>}
+      
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {success && (
+        <Alert className="mb-4 border-green-500 text-green-500">
+          <AlertDescription>{success}</AlertDescription>
+        </Alert>
+      )}
+      
       {/* All Categories */}
       {tab === 0 && (
-        <div className="bg-card dark:bg-poll-darker rounded shadow p-6 border border-border">
+        <div className="bg-card rounded-lg shadow-sm p-6 border">
           {loading ? (
-            <div>Loading...</div>
+            <div className="flex items-center justify-center p-8 text-muted-foreground">
+              <ArrowPathIcon className="w-6 h-6 animate-spin mr-2" />
+              Loading categories...
+            </div>
           ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  <th className="py-2">Name</th>
-                  <th className="py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="w-[200px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {categories.map((cat) => (
-                  <tr key={cat.id} className="border-t">
-                    <td className="py-2">{cat.name}</td>
-                    <td className="py-2">
-                      <button className="text-blue-600 mr-4" onClick={() => startEdit(cat)}><PencilSquareIcon className="w-5 h-5 inline mr-1" /> Edit</button>
-                      <button className="text-red-600" onClick={() => handleDelete(cat.id)}><TrashIcon className="w-5 h-5 inline mr-1" /> Delete</button>
-                    </td>
-                  </tr>
+                  <TableRow key={cat.id}>
+                    <TableCell className="font-medium">{cat.name}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEdit(cat)}
+                        >
+                          <PencilSquareIcon className="w-4 h-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(cat.id)}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+                {categories.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center text-muted-foreground">
+                      No categories found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           )}
         </div>
       )}
       {/* Add Category */}
       {tab === 1 && (
-        <form onSubmit={handleAdd} className="bg-card dark:bg-poll-darker rounded shadow p-6 max-w-md border border-border">
-          <label htmlFor="category-name" className="block mb-2 font-medium">Category Name</label>
-          <input
-            id="category-name"
-            type="text"
-            className="border rounded p-2 w-full mb-4"
-            value={newCategory}
-            onChange={e => setNewCategory(e.target.value)}
-            required
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded font-semibold"
-            disabled={addLoading}
-          ><PlusIcon className="w-5 h-5 inline mr-1" /> {addLoading ? "Adding..." : "Add Category"}</button>
+        <form onSubmit={handleAdd} className="space-y-4 bg-card rounded-lg shadow-sm p-6 border max-w-md">
+          <div className="space-y-2">
+            <Input
+              type="text"
+              placeholder="Enter category name"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              disabled={addLoading}
+              className="w-full"
+            />
+          </div>
+          <Button 
+            type="submit" 
+            disabled={!newCategory || addLoading}
+            className="w-full"
+          >
+            {addLoading ? (
+              <>
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <PlusIcon className="w-4 h-4" />
+                Add Category
+              </>
+            )}
+          </Button>
         </form>
-      )}
-      {/* Edit Categories */}
-      {tab === 2 && (
-        <div className="bg-card dark:bg-poll-darker rounded shadow p-6 border border-border">
-          {loading ? (
-            <div>Loading...</div>
-          ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  <th className="py-2">Name</th>
-                  <th className="py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((cat) => (
-                  <tr key={cat.id} className="border-t">
-                    <td className="py-2">
-                      {editId === cat.id ? (
-                        <form onSubmit={handleEdit} className="flex gap-2">
-                          <input
-                            type="text"
-                            className="border rounded p-2"
-                            value={editName}
-                            onChange={e => setEditName(e.target.value)}
-                            required
-                          />
-                          <button type="submit" className="bg-green-600 text-white px-3 py-1 rounded" disabled={editLoading}><CheckIcon className="w-5 h-5 inline mr-1" /> Save</button>
-                          <button type="button" className="bg-gray-300 px-3 py-1 rounded" onClick={cancelEdit}><XMarkIcon className="w-5 h-5 inline mr-1" /> Cancel</button>
-                        </form>
-                      ) : (
-                        cat.name
-                      )}
-                    </td>
-                    <td className="py-2">
-                      {editId !== cat.id && (
-                        <>
-                          <button className="text-blue-600 mr-4" onClick={() => startEdit(cat)}><PencilSquareIcon className="w-5 h-5 inline mr-1" /> Edit</button>
-                          <button className="text-red-600" onClick={() => handleDelete(cat.id)}><TrashIcon className="w-5 h-5 inline mr-1" /> Delete</button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
       )}
     </div>
   );
@@ -479,20 +491,11 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
 
   // Tabs
   const [tab, setTab] = useState(0);
-  const tabs = ["All Polls", "Add Poll", "Edit Polls"];
+  const tabs = ["All Polls", "Add Poll"];
 
   return (
     <div>
       <div className="mb-6 flex gap-4 border-b bg-card dark:bg-poll-darker rounded-t-lg p-4">
-        {POLL_TABS.map((t, idx) => (
-          <button
-            key={t}
-            className={`pb-2 px-4 font-medium border-b-2 transition-colors ${tab === idx ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-primary"}`}
-            onClick={() => setTab(idx)}
-          >
-            {t}
-          </button>
-        ))}
       </div>
       {error && <div className="text-red-600 mb-2">{error}</div>}
       {success && <div className="text-green-600 mb-2">{success}</div>}
@@ -502,26 +505,26 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
           {loading ? (
             <div>Loading...</div>
           ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  <th className="py-2">Question</th>
-                  <th className="py-2">Category</th>
-                  <th className="py-2">Visibility</th>
-                  <th className="py-2">Max Choices</th>
-                  <th className="py-2">Creator</th>
-                  <th className="py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-left">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="py-2">Question</TableHead>
+                  <TableHead className="py-2">Category</TableHead>
+                  <TableHead className="py-2">Visibility</TableHead>
+                  <TableHead className="py-2">Max Choices</TableHead>
+                  <TableHead className="py-2">Creator</TableHead>
+                  <TableHead className="py-2">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {polls.map((poll) => (
-                  <tr key={poll.id} className="border-t">
-                    <td className="py-2">{poll.question}</td>
-                    <td className="py-2">{poll.categories?.name || poll.category_id}</td>
-                    <td className="py-2">{poll.visibility}</td>
-                    <td className="py-2">{poll.max_choices}</td>
-                    <td className="py-2">{poll.profiles?.username || poll.user_id}</td>
-                    <td className="py-2">
+                  <TableRow key={poll.id} className="border-t">
+                    <TableCell className="py-2">{poll.question}</TableCell>
+                    <TableCell className="py-2">{poll.categories?.name || poll.category_id}</TableCell>
+                    <TableCell className="py-2">{poll.visibility}</TableCell>
+                    <TableCell className="py-2">{poll.max_choices}</TableCell>
+                    <TableCell className="py-2">{poll.profiles?.username || poll.user_id}</TableCell>
+                    <TableCell className="py-2">
                       <button
                         className="text-blue-600 mr-4"
                         onClick={() => startEdit(poll)}
@@ -538,19 +541,18 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
                           if (e.key === 'Enter' || e.key === ' ') handleDelete(poll.id);
                         }}
                       ><TrashIcon className="w-5 h-5 inline mr-1" /> Delete</button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
       )}
       {/* Add Poll */}
       {tab === 1 && (
-        <form onSubmit={handleAdd} className="bg-card dark:bg-poll-darker rounded shadow p-6 max-w-md border border-border">
-          <label className="block mb-2 font-medium" htmlFor="add-question">Question</label>
-          <input
+        <form onSubmit={handleAdd} className="space-y-4 bg-card dark:bg-poll-darker rounded shadow p-6 max-w-md border border-border">
+          <Input
             id="add-question"
             type="text"
             className="border rounded p-2 w-full mb-4"
@@ -558,72 +560,7 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
             onChange={e => setAddForm(f => ({ ...f, question: e.target.value }))}
             required
           />
-          <label className="block mb-2 font-medium" htmlFor="add-choice-0">Choices</label>
-          <div className="flex flex-col gap-3 mb-4">
-            {addForm.choices.map((choice, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <label htmlFor={`add-choice-${idx}`} className="sr-only">Choice {idx + 1}</label>
-                <input
-                  id={`add-choice-${idx}`}
-                  type="text"
-                  className="flex-1 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={`Choice ${idx + 1}`}
-                  value={choice}
-                  onChange={e => handleChoiceChange(idx, e.target.value)}
-                  required
-                  aria-label={`Choice ${idx + 1}`}
-                  aria-required="true"
-                  tabIndex={0}
-                />
-                {addForm.choices.length > MIN_CHOICES && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveChoice(idx)}
-                    className="text-red-500 hover:text-red-700 p-1 rounded focus:outline-none focus:ring-2 focus:ring-red-400"
-                    aria-label={`Remove choice ${idx + 1}`}
-                    tabIndex={0}
-                  >
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={handleAddChoice}
-            className="mb-4 text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:underline"
-            aria-label="Add another choice"
-            tabIndex={0}
-          >
-            + Add another choice
-          </button>
-          <label htmlFor="add-category" className="block mb-2 font-medium">Category</label>
-          <select
-            id="add-category"
-            className="border rounded p-2 w-full mb-4"
-            value={addForm.category_id}
-            onChange={e => setAddForm(f => ({ ...f, category_id: e.target.value }))}
-            required
-          >
-            <option value="" disabled>Select a category</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-          <label htmlFor="add-visibility" className="block mb-2 font-medium">Visibility</label>
-          <select
-            id="add-visibility"
-            className="border rounded p-2 w-full mb-4"
-            value={addForm.visibility}
-            onChange={e => setAddForm(f => ({ ...f, visibility: e.target.value }))}
-            required
-          >
-            <option value="public">Public</option>
-            <option value="private">Private</option>
-          </select>
-          <label htmlFor="add-max-choices" className="block mb-2 font-medium">Max Choices</label>
-          <input
+          <Input
             id="add-max-choices"
             type="number"
             min={1}
@@ -633,79 +570,7 @@ const PollTabs: React.FC<{ session: any }> = ({ session }) => {
             onChange={e => setAddForm(f => ({ ...f, max_choices: Number(e.target.value) }))}
             required
           />
-          <label htmlFor="add-creator" className="block mb-2 font-medium">Creator (User)</label>
-          <select
-            id="add-creator"
-            className="border rounded p-2 w-full mb-4"
-            value={addForm.user_id}
-            onChange={e => setAddForm(f => ({ ...f, user_id: e.target.value }))}
-            required
-          >
-            <option value="" disabled>Select a user</option>
-            {users.map(user => (
-              <option key={user.id} value={user.id}>{user.username || user.id}</option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded font-semibold"
-            disabled={addLoading}
-          ><PlusIcon className="w-5 h-5 inline mr-1" /> {addLoading ? "Adding..." : "Add Poll"}</button>
         </form>
-      )}
-      {/* Edit Polls */}
-      {tab === 2 && (
-        <div className="bg-card dark:bg-poll-darker rounded shadow p-6 border border-border">
-          {loading ? (
-            <div>Loading...</div>
-          ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  <th className="py-2">Question</th>
-                  <th className="py-2">Category</th>
-                  <th className="py-2">Visibility</th>
-                  <th className="py-2">Max Choices</th>
-                  <th className="py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {polls.map((poll) => (
-                  <tr key={poll.id} className="border-t">
-                    <td className="py-2">
-                      {editId === poll.id ? (
-                        <form onSubmit={handleEdit} className="flex gap-2">
-                          <input
-                            type="text"
-                            className="border rounded p-2"
-                            value={editForm.question}
-                            onChange={e => setEditForm(f => ({ ...f, question: e.target.value }))}
-                            required
-                          />
-                          <button type="submit" className="bg-green-600 text-white px-3 py-1 rounded" disabled={editLoading}><CheckIcon className="w-5 h-5 inline mr-1" /> Save</button>
-                          <button type="button" className="bg-gray-300 px-3 py-1 rounded" onClick={cancelEdit}><XMarkIcon className="w-5 h-5 inline mr-1" /> Cancel</button>
-                        </form>
-                      ) : (
-                        poll.question
-                      )}
-                    </td>
-                    <td className="py-2">{poll.categories?.name || poll.category_id}</td>
-                    <td className="py-2">{poll.visibility}</td>
-                    <td className="py-2">{poll.max_choices}</td>
-                    <td className="py-2">
-                      {editId !== poll.id && (
-                        <>
-                          <button className="text-blue-600 mr-4" onClick={() => startEdit(poll)}><PencilSquareIcon className="w-5 h-5 inline mr-1" /> Edit</button>
-                          <button className="text-red-600" onClick={() => handleDelete(poll.id)}><TrashIcon className="w-5 h-5 inline mr-1" /> Delete</button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
       )}
     </div>
   );
@@ -1090,28 +955,28 @@ const UserAdminPanel: React.FC<{ session: any }> = ({ session }) => {
           <div>Loading...</div>
         ) : (
           <>
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  <th className="py-2">Avatar</th>
-                  <th className="py-2">Display Name</th>
-                  <th className="py-2">Username</th>
-                  <th className="py-2">Banned</th>
-                  <th className="py-2">Created</th>
-                  <th className="py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-left">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="py-2">Avatar</TableHead>
+                  <TableHead className="py-2">Display Name</TableHead>
+                  <TableHead className="py-2">Username</TableHead>
+                  <TableHead className="py-2">Banned</TableHead>
+                  <TableHead className="py-2">Created</TableHead>
+                  <TableHead className="py-2">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {users.map((user) => (
-                  <tr key={user.id} className="border-t">
-                    <td className="py-2">
+                  <TableRow key={user.id} className="border-t">
+                    <TableCell className="py-2">
                       <Image src={user.avatar_url || "/default-avatar.png"} alt="avatar" width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
-                    </td>
-                    <td className="py-2">{user.display_name || <span className="text-gray-400">(none)</span>}</td>
-                    <td className="py-2">{user.username}</td>
-                    <td className="py-2">{user.banned ? "Yes" : "No"}</td>
-                    <td className="py-2">{new Date(user.created_at).toLocaleDateString()}</td>
-                    <td className="py-2 flex gap-2 flex-wrap">
+                    </TableCell>
+                    <TableCell className="py-2">{user.display_name || <span className="text-gray-400">(none)</span>}</TableCell>
+                    <TableCell className="py-2">{user.username}</TableCell>
+                    <TableCell className="py-2">{user.banned ? "Yes" : "No"}</TableCell>
+                    <TableCell className="py-2">{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="py-2 flex gap-2 flex-wrap">
                       <button className="text-blue-600 underline flex items-center gap-1" onClick={() => setViewUser(user)} aria-label="View profile"><EyeIcon className="w-5 h-5" />View</button>
                       <button
                         className="text-yellow-600 underline flex items-center gap-1"
@@ -1137,11 +1002,11 @@ const UserAdminPanel: React.FC<{ session: any }> = ({ session }) => {
                       >
                         <TrashIcon className="w-5 h-5" />Delete
                       </button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
             {/* Pagination */}
             <div className="flex justify-center gap-2 mt-6">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
