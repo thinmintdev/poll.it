@@ -5,12 +5,12 @@ import RecentPolls from "../components/RecentPolls";
 const HomePage: React.FC = () => (
   <div className="bg-poll-dark text-poll-grey-100">
     {/* Logo and Header Section */}
-    <div className="w-full text-center py-6">
-      <h1 className="text-4xl font-bold mb-2">
+    <div className="w-full text-center py-14">
+      <h1 className="text-6xl font-bold mb-2">
         Poll<span className="text-[#14b8a6]">.it</span>
       </h1>
-      <p className="text-poll-grey-400">
-        Create engaging polls and get real-time insights from your community
+      <p className="text-poll-grey-400 text-2xl">
+        Engaging polls and real-time insights from your community
       </p>
     </div>
 
@@ -22,9 +22,9 @@ const HomePage: React.FC = () => (
             <span className="text-[#14b8a6]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
+                width="32"
+                height="32"
+                viewBox="0 0 24 20"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
@@ -35,7 +35,7 @@ const HomePage: React.FC = () => (
                 <path d="M5 12h14" />
               </svg>
             </span>
-            <h2 className="text-xl font-semibold">Create New Poll</h2>
+            <h2 className="text-3xl font-semibold">Create New Poll</h2>
           </div>
           <PollForm />
         </div>
@@ -49,9 +49,9 @@ const HomePage: React.FC = () => (
               <span className="text-poll-orange-400">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 20"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
@@ -62,7 +62,7 @@ const HomePage: React.FC = () => (
                   <path d="m8 11-4 2 4 2" />
                 </svg>
               </span>
-              <h2 className="text-xl font-semibold">Live Polls</h2>
+              <h2 className="text-3xl font-semibold">Live Polls</h2>
               <span className="text-sm text-gray-400 ml-2">(Last 24h)</span>
             </div>
             <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-[#14b8a6]/50 text-white border-[#14b8a6]/80">

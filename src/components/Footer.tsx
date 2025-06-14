@@ -19,7 +19,7 @@ const Footer: React.FC = () => {
             </Link>
             <p className="text-poll-grey-400 mt-2 max-w-md">
               Create engaging polls and get real-time insights from your community. 
-              Build better decisions through collective intelligence.
+              
             </p>
             <div className="flex items-center gap-2 mt-4 text-poll-grey-400">
               <span>Made with</span>
@@ -39,15 +39,7 @@ const Footer: React.FC = () => {
               <Link href="/" className="block text-poll-grey-400 hover:text-white transition-colors">
                 Home
               </Link>
-              <Link href="/polls" className="block text-poll-grey-400 hover:text-white transition-colors">
-                Browse Polls
-              </Link>
-              <Link href="/create" className="block text-poll-grey-400 hover:text-white transition-colors">
-                Create Poll
-              </Link>
-              <Link href="/analytics" className="block text-poll-grey-400 hover:text-white transition-colors">
-                Analytics
-              </Link>
+              
             </div>
           </div>
 
@@ -55,15 +47,11 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-white font-semibold mb-4">Support</h3>
             <div className="space-y-3">
-              <Link href="/help" className="block text-poll-grey-400 hover:text-white transition-colors">
-                Help Center
-              </Link>
+              
               <Link href="/contact" className="block text-poll-grey-400 hover:text-white transition-colors">
                 Contact Us
               </Link>
-              <Link href="/privacy" className="block text-poll-grey-400 hover:text-white transition-colors">
-                Privacy Policy
-              </Link>
+              
               <Link href="/terms" className="block text-poll-grey-400 hover:text-white transition-colors">
                 Terms of Service
               </Link>
@@ -71,7 +59,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <Separator className="my-8 bg-poll-grey-700" />
+        <Separator className="my-4 bg-poll-grey-700" />
 
         {/* Bottom Footer */}
         <div className="flex flex-col md:flex-row justify-between items-center">
