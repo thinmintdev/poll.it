@@ -3,7 +3,7 @@ import PollForm from "../components/PollForm";
 import RecentPolls from "../components/RecentPolls";
 
 const HomePage: React.FC = () => (
-  <main className="min-h-screen bg-poll-dark text-poll-grey-100 pt-[64px]">
+  <div className="bg-poll-dark text-poll-grey-100">
     {/* Logo and Header Section */}
     <div className="w-full text-center py-6">
       <h1 className="text-4xl font-bold mb-2">
@@ -14,7 +14,7 @@ const HomePage: React.FC = () => (
       </p>
     </div>
 
-    <div className="container max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 px-4 pb-6">
+    <div className="container max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 px-4 py-6">
       {/* Create Poll Section */}
       <div className="w-full lg:w-1/2">
         <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg p-6">
@@ -42,8 +42,8 @@ const HomePage: React.FC = () => (
       </div>
 
       {/* Live Polls Section */}
-      <div className="w-full lg:w-1/2">
-        <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg p-6 h-[calc(100vh-200px)] max-h-[800px] flex flex-col">
+      <div className="w-full lg:w-1/2 lg:sticky lg:top-20 self-start">
+        <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg p-6 h-[calc(100vh-280px)] flex flex-col">
           <div className="flex items-center justify-between mb-6 flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-poll-orange-400">
@@ -75,7 +75,7 @@ const HomePage: React.FC = () => (
         </div>
       </div>
     </div>
-  </main>
+  </div>
 );
 
 export default HomePage;

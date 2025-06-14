@@ -149,7 +149,7 @@ const RecentPolls: React.FC = () => {
   return (
     <div 
       ref={scrollContainerRef}
-      className="h-[calc(100vh-280px)] max-h-[800px] space-y-4 relative overflow-y-auto"
+      className="h-full space-y-4 relative overflow-y-auto"
       style={{ 
         scrollBehavior: 'smooth',
         WebkitOverflowScrolling: 'touch',

@@ -13,7 +13,6 @@ import {
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, ChartOptions } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import dynamic from 'next/dynamic';
-import { ChatSidebar, Message as ChatMessage, ChatUser } from "../../components/ChatSidebar";
 import { RadioIcon, SignalIcon } from "lucide-react";
 // For emoji-mart v5+:
 // npm install @emoji-mart/react
@@ -444,7 +443,7 @@ const PollPage: React.FC = () => {
   }));
 
   return (
-    <main className="min-h-screen bg-poll-dark text-poll-grey-100">
+    <div className="bg-poll-dark text-poll-grey-100">
       <div className="w-full text-center pt-12 pb-8">
         <h1 className="text-4xl font-bold mb-2">
           Poll<span className="text-[#14b8a6]">.it</span>
@@ -512,13 +511,24 @@ const PollPage: React.FC = () => {
                     {chartData.datasets[0].data.every((v: number) => v === 0) ? (
                       <div className="text-poll-grey-500 text-center py-8">No votes yet</div>
                     ) : showBar ? (
-                      <BarChart
+                      <Bar
                         data={{
                           labels: choices.map(c => c.text),
                           datasets: [{
                             label: "Votes",
                             data: choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length),
                           }],
+                        }}
+                        options={{
+                          scales: {
+                            y: {
+                              beginAtZero: true,
+                              ticks: {
+                                stepSize: 1,
+                              },
+                              suggestedMax: Math.max(...choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length)) + 1,
+                            }
+                          }
                         }}
                       />
                     ) : (
@@ -590,8 +600,8 @@ const PollPage: React.FC = () => {
         </div>
 
         {/* Chat Section (1/3 width) */}
-        <div className="w-full lg:w-1/3">
-          <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg">
+        <div className="w-full lg:w-1/3 lg:sticky lg:top-20 self-start">
+          <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg h-[calc(100vh-240px)] flex flex-col">
             {/* Chat Header */}
             <div className="p-4 border-b border-poll-grey-700">
               <div className="flex items-center justify-between">
@@ -608,7 +618,7 @@ const PollPage: React.FC = () => {
             </div>
 
             {/* Chat Messages */}
-            <div className="h-[calc(100vh-150px)] max-h-[800px] p-4 space-y-4 overflow-y-auto">
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
               {chatMessages.map((msg) => (
                 <div
                   key={msg.id}
@@ -678,8 +688,24 @@ const PollPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 };
+
+// Type definitions for chat
+interface ChatMessage {
+  id: number;
+  user: string;
+  message: string;
+  timestamp: string;
+  isOwn: boolean;
+  type: "text" | "poll" | "system";
+}
+
+interface ChatUser {
+  id: number;
+  name: string;
+  status: "online" | "away" | "offline";
+}
 
 export default PollPage;
