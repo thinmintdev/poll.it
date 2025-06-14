@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ktsvgjezhyrzrhghilvm.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0c3ZnamV6aHlyenJoZ2hpbHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2ODkwMjcsImV4cCI6MjA2NTI2NTAyN30.ragywUSW8m1l7y3HPIMGtf54reMP2Bak99M4FETG9sw';
+// Service role key - should only be used server-side for admin operations
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Verify admin token - this is a mock verification for development
 function verifyAdminToken(token: string): boolean {
@@ -42,8 +44,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const token = authHeader.replace("Bearer ", "");
   
   try {
-    // Create a Supabase client without the user token
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    // Create a Supabase client using service role key if available (to bypass RLS)
+    const supabase = supabaseServiceKey 
+      ? createClient(supabaseUrl, supabaseServiceKey)
+      : createClient(supabaseUrl, supabaseAnonKey);
     
     // For development: verify our mock admin token
     let isAdmin = false;

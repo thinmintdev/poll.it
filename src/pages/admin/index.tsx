@@ -22,6 +22,7 @@ const AdminPanel: FC = () => {
   // For the temp login form
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(''); // For production login
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   // Initialize with a default valid section from SIDEBAR_ITEMS
   const [activeSection, setActiveSection] = useState<SidebarSection>(SIDEBAR_ITEMS[0].label);
@@ -45,12 +46,17 @@ const AdminPanel: FC = () => {
     setError(null);
     
     try {
+      // Determine credentials based on environment
+      const credentials = process.env.NODE_ENV !== 'production' 
+        ? { username, password }
+        : { email, password };
+      
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(credentials),
       });
       
       if (!res.ok) {
@@ -158,19 +164,37 @@ const AdminPanel: FC = () => {
           <h1 className="text-2xl font-bold mb-6 text-center">Admin Login</h1>
           
           <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium mb-1">
-                Username
-              </label>
-              <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
-                required
-              />
-            </div>
+            {process.env.NODE_ENV !== 'production' ? (
+              // Development login
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium mb-1">
+                  Username
+                </label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="admin"
+                  required
+                />
+              </div>
+            ) : (
+              // Production login
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium mb-1">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@example.com"
+                  required
+                />
+              </div>
+            )}
             
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-1">
@@ -194,7 +218,7 @@ const AdminPanel: FC = () => {
               {isAuthenticating ? 'Logging in...' : 'Login'}
             </Button>
             
-            {!error && (
+            {!error && process.env.NODE_ENV !== 'production' && (
               <p className="text-sm text-gray-500 text-center mt-4">
                 For testing, use username: <strong>admin</strong> and password: <strong>password</strong>
               </p>
