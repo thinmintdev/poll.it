@@ -16,6 +16,7 @@ interface AdminSidebarProps {
   onSectionChange: (section: SidebarSection) => void;
   isMinimized: boolean;
   onToggleMinimize: () => void;
+  adminUsername?: string; // Add the adminUsername property
 }
 
 const AdminSidebar: FC<AdminSidebarProps> = ({
@@ -23,6 +24,7 @@ const AdminSidebar: FC<AdminSidebarProps> = ({
   onSectionChange,
   isMinimized,
   onToggleMinimize,
+  adminUsername,
 }) => {
   return (
     <aside
@@ -64,6 +66,22 @@ const AdminSidebar: FC<AdminSidebarProps> = ({
             </button>
           ))}
         </nav>
+        
+        {/* Display admin username if available */}
+        {adminUsername && (
+          <div className={cn(
+            "p-4 border-t flex items-center gap-2",
+            isMinimized ? "justify-center" : "justify-start"
+          )}>
+            <UserCircleIcon className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
+            {!isMinimized && (
+              <div className="truncate">
+                <p className="text-sm font-medium">{adminUsername}</p>
+                <p className="text-xs text-muted-foreground">Admin</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </aside>
   );

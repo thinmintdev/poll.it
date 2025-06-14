@@ -1,23 +1,31 @@
 import dynamic from 'next/dynamic';
-import { FC } from 'react';
-import { AdminSession } from '@/types/admin';
+import type { FC } from 'react';
+import type { AdminSession } from '@/types/admin';
 
 interface TabsProps {
   session: AdminSession;
 }
 
-export const DynamicPollsTabs: FC<TabsProps> = dynamic(
-  () => import('./polls/PollsTabs'),
-  { 
-    loading: () => import('./common/LoadingSpinner').then(mod => <mod.PageSpinner />),
+// Create a type-safe function for dynamic imports
+function createDynamicComponent<T>(importFunc: () => Promise<{ default: FC<T> }>) {
+  return dynamic(importFunc, { 
+    loading: () => null,
     ssr: false 
-  }
-) as FC<TabsProps>;
+  });
+}
 
-export const DynamicCategoriesTabs: FC<TabsProps> = dynamic(
-  () => import('./categories/CategoriesTabs'),
-  { 
-    loading: () => import('./common/LoadingSpinner').then(mod => <mod.PageSpinner />),
-    ssr: false 
-  }
-) as FC<TabsProps>;
+export const DynamicPollsTabs = createDynamicComponent<TabsProps>(
+  () => import('./polls/PollsTabs')
+);
+
+export const DynamicCategoriesTabs = createDynamicComponent<TabsProps>(
+  () => import('./categories/CategoriesTabs')
+);
+
+export const DynamicUsersTabs = createDynamicComponent<TabsProps>(
+  () => import('./users/UsersTabs')
+);
+
+export const DynamicProfileTabs = createDynamicComponent<TabsProps>(
+  () => import('./profile/ProfileTabs')
+);

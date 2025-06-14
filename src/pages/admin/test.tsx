@@ -90,7 +90,12 @@ export default function ApiTest() {
   };
 
   return (
-    <AdminLayout activeSection="Debug" sidebarMinimized={false} onMinimizeSidebar={() => {}}>
+    <AdminLayout 
+      activeSection="Polls" 
+      onSectionChange={() => {}} 
+      isMinimized={false} 
+      onToggleMinimize={() => {}}
+    >
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">API Test Page</h1>
         

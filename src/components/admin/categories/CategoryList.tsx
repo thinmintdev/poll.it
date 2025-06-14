@@ -115,3 +115,5 @@ export const CategoryList: FC<CategoryListProps> = ({
     </div>
   );
 };
+
+export default CategoryList;

@@ -249,4 +249,4 @@ export const UserList: React.FC<UserListProps> = ({
   );
 };
 
-// export default UserList; // Ensuring named export as per usage
+export default UserList;

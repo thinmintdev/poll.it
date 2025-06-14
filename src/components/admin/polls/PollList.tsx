@@ -149,3 +149,5 @@ export const PollList: FC<PollListProps> = ({
     </div>
   );
 };
+
+export default PollList;

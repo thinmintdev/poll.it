@@ -1,21 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AdminProfile } from '@/types/admin';
+import { AdminProfile, AdminSession } from '@/types/admin';
 
-// Mock API functions (replace with actual API calls)
-const fetchAdminProfileAPI = async (): Promise<AdminProfile> => {
+// API functions that use the session token
+const fetchAdminProfileAPI = async (token: string): Promise<AdminProfile> => {
+  // In a real implementation, this would use the token to authenticate the API request
+  console.log('Using token for profile fetch:', token);
+  
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
         id: 'admin001',
         username: 'AdminUser',
         email: 'admin@example.com',
-        // Add other profile fields as needed
+        is_admin: true,
+        banned: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       });
     }, 500);
   });
 };
 
-const updateAdminProfileAPI = async (profileData: Partial<AdminProfile>): Promise<AdminProfile> => {
+const updateAdminProfileAPI = async (token: string, profileData: Partial<AdminProfile>): Promise<AdminProfile> => {
+  // In a real implementation, this would use the token to authenticate the API request
+  console.log('Using token for profile update:', token);
+  
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (profileData.email === 'error@example.com') {
@@ -25,15 +34,19 @@ const updateAdminProfileAPI = async (profileData: Partial<AdminProfile>): Promis
         resolve({ 
           id: 'admin001', 
           username: profileData.username || 'AdminUser', 
-          email: profileData.email || 'admin@example.com', 
-          ...profileData 
+          email: profileData.email || 'admin@example.com',
+          // Ensure required fields are set with correct values
+          is_admin: profileData.is_admin !== undefined ? profileData.is_admin : true,
+          banned: profileData.banned !== undefined ? profileData.banned : false,
+          created_at: profileData.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
         });
       }
     }, 500);
   });
 };
 
-export const useAdminProfile = () => {
+export const useAdminProfile = (session: AdminSession) => {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,14 +57,14 @@ export const useAdminProfile = () => {
     setError(null);
     setSuccessMessage(null);
     try {
-      const data = await fetchAdminProfileAPI();
+      const data = await fetchAdminProfileAPI(session.access_token);
       setProfile(data);
     } catch (e: any) {
       setError(e.message || 'Failed to fetch profile.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [session.access_token]);
 
   useEffect(() => {
     fetchProfile();
@@ -62,7 +75,7 @@ export const useAdminProfile = () => {
     setError(null);
     setSuccessMessage(null);
     try {
-      const updatedProfile = await updateAdminProfileAPI({ ...profile, ...updatedData });
+      const updatedProfile = await updateAdminProfileAPI(session.access_token, { ...profile, ...updatedData });
       setProfile(updatedProfile);
       setSuccessMessage('Profile updated successfully.');
     } catch (e: any) {

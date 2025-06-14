@@ -3,8 +3,13 @@ import { useAdminProfile } from '@/hooks/admin/useAdminProfile';
 import AdminProfileForm from './AdminProfileForm';
 import { LoadingSpinner } from '@/components/admin/common/LoadingSpinner';
 import { StatusAlert } from '@/components/admin/common/StatusAlert';
+import { AdminSession } from '@/types/admin';
 
-const ProfileTabs: React.FC = () => {
+interface ProfileTabsProps {
+  session: AdminSession;
+}
+
+const ProfileTabs: React.FC<ProfileTabsProps> = ({ session }) => {
   const {
     profile,
     isLoading,
@@ -13,7 +18,7 @@ const ProfileTabs: React.FC = () => {
     updateProfile,
     clearError,
     clearSuccessMessage,
-  } = useAdminProfile();
+  } = useAdminProfile(session);
 
   if (isLoading && !profile) {
     return <LoadingSpinner />;
@@ -21,7 +26,7 @@ const ProfileTabs: React.FC = () => {
 
   // Show general error if profile fetch failed, but still render form if profile exists (for update errors)
   if (error && !profile) {
-    return <StatusAlert type="error" message={error} onClose={clearError} />;
+    return <StatusAlert error={error} onClose={clearError} />;
   }
 
   return (

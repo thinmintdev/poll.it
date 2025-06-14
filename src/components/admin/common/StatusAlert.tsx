@@ -8,21 +8,35 @@ interface StatusAlertProps {
   success?: string | null;
   className?: string;
   onClose?: () => void;
+  // For backward compatibility with existing code
+  type?: 'error' | 'success';
+  message?: string;
 }
 
-export const StatusAlert: FC<StatusAlertProps> = ({ error, success, className, onClose }) => {
-  if (!error && !success) return null;
+export const StatusAlert: FC<StatusAlertProps> = ({ 
+  error, 
+  success, 
+  className, 
+  onClose,
+  type,
+  message
+}) => {
+  // Handle both new and old API
+  const errorMessage = error || (type === 'error' ? message : null);
+  const successMessage = success || (type === 'success' ? message : null);
+
+  if (!errorMessage && !successMessage) return null;
 
   return (
     <Alert
-      variant={error ? "destructive" : undefined}
+      variant={errorMessage ? "destructive" : undefined}
       className={cn(
         "mb-4 relative",
-        success && "border-green-500 text-green-500",
+        successMessage && "border-green-500 text-green-500",
         className
       )}
     >
-      <AlertDescription>{error || success}</AlertDescription>
+      <AlertDescription>{errorMessage || successMessage}</AlertDescription>
       {onClose && (
         <button 
           onClick={onClose}
