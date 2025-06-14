@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react"; // Added useCallback
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react"; // Added useMemo
 import { useRouter } from "next/router";
 import { supabase } from "../../utils/supabaseClient";
 import {
@@ -291,26 +291,44 @@ const PollPage: React.FC = () => {
   }, [pollId, user, votes]);
 
   // Chart data
-  const chartData = {
-    labels: ["Votes"],
-    datasets: choices.map((choice, index) => ({
-      label: choice.text,
-      data: [votes.filter(v => String(v.choice_id) === String(choice.id)).length],
-      backgroundColor: "#14b8a6 #f97316 #ef4444 #3b82f6 #64748b #0d9488 #ea580c #dc2626".split(" ")[index % 8],
-      borderColor: "#0d9488 #ea580c #dc2626 #2563eb #475569 #0f766e #c2410c #b91c1c".split(" ")[index % 8],
-      borderWidth: 2,
-      borderRadius: 6,
-    })),
-  };
+  const { chartData, maxVoteCount } = useMemo(() => {
+    const data = {
+      labels: ["Votes"],
+      datasets: choices.map((choice, index) => {
+        const voteCount = votes.filter(v => String(v.choice_id) === String(choice.id)).length;
+        return {
+          label: choice.text,
+          data: [voteCount],
+          backgroundColor: "#14b8a6 #f97316 #ef4444 #3b82f6 #64748b #0d9488 #ea580c #dc2626".split(" ")[index % 8],
+          borderColor: "#0d9488 #ea580c #dc2626 #2563eb #475569 #0f766e #c2410c #b91c1c".split(" ")[index % 8],
+          borderWidth: 2,
+          borderRadius: 6,
+        };
+      }),
+    };
+    
+    // Calculate the maximum vote count among all choices
+    const maxCount = data.datasets.reduce((max, dataset) => 
+      Math.max(max, ...dataset.data), 0);
+      
+    return { chartData: data, maxVoteCount: maxCount };
+  }, [choices, votes]);
 
 
 
   // Specific options for bar chart
-  const ChartOptions: ChartOptions<'bar'> = {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
+  const ChartOptions: ChartOptions<'bar'> = useMemo(() => {
+    // Calculate max value to show (at least 5, or highest vote count + 1)
+    const maxDisplayValue = Math.max(5, maxVoteCount + 1);
+    
+    // Calculate step size to get approximately 5 ticks
+    const stepSize = Math.max(1, Math.ceil(maxDisplayValue / 5));
+    
+    return {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
       legend: {
         position: 'bottom',
         align: 'center' as const,
@@ -326,12 +344,18 @@ const PollPage: React.FC = () => {
     },
     scales: {
       x: {
-        beginAtZero: true,
+        beginAtZero: true,     
         grid: { color: "#374151" },
+        max: maxDisplayValue,
         ticks: { 
           color: "#9ca3af", 
           font: { size: 11 },
-          stepSize: 1
+          stepSize: stepSize,
+          // Ensure we only display whole numbers
+          callback: function(value) {
+            const numValue = Number(value);
+            return numValue % 1 === 0 ? numValue : '';
+          }
         }
       },
       y: {
@@ -339,6 +363,7 @@ const PollPage: React.FC = () => {
       }
     }
   };
+  }, [maxVoteCount]);
 
   // Emoji picker
   const handleEmojiSelect = (emoji: any) => {
