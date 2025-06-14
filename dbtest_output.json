@@ -1,0 +1,1 @@
+{"message":"Error fetching tables","error":{"code":"42P01","details":null,"hint":null,"message":"relation \"public.information_schema.tables\" does not exist"}}
