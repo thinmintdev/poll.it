@@ -303,52 +303,17 @@ const PollPage: React.FC = () => {
     })),
   };
 
-  const chartOptions: ChartOptions<'bar'> = {
-    indexAxis: 'x',
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'right',
-        align: 'start',
-        labels: {
-          color: "#cbd5e1",
-          padding: 20,
-          font: { size: 12 },
-          usePointStyle: true,
-          pointStyle: 'circle',
-          boxWidth: 10
-        }
-      }
-    },
-    scales: {
-      x: {
-        display: false,
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: "#374151" },
-        ticks: { 
-          color: "#9ca3af", 
-          font: { size: 11 },
-          stepSize: 1
-        },
-        afterDataLimits: (axis: any) => {
-          axis.max = axis.max * 1.1 + 1;
-        }
-      }
-    }
-  };
+
 
   // Specific options for bar chart
-  const barChartOptions: ChartOptions<'bar'> = {
+  const ChartOptions: ChartOptions<'bar'> = {
     indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'right' as const,
-        align: 'start' as const,
+        position: 'bottom',
+        align: 'center' as const,
         labels: {
           color: "#cbd5e1",
           padding: 20,
@@ -534,8 +499,23 @@ const PollPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-6">
+                  <div>
+                    <h3 className="text-white text-xl font-semibold mb-2">{poll.question}</h3>
+                    <div className="flex items-center gap-4 text-sm text-poll-grey-400">
+                      <span className="flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        {votes.length} votes
+                      </span>
+                    </div>
+                  </div>
+
                   {/* Chart Toggle */}
-                  <div className="flex justify-center gap-2 mb-6">
+                  <div className="flex justify-center gap-2">
                     <button
                       type="button"
                       className={`px-4 py-1.5 rounded-lg font-semibold text-sm transition-colors border focus:outline-none focus:ring-2 focus:ring-poll-blue-400 ${showBar ? 'bg-poll-blue-500 text-white border-poll-blue-600 shadow' : 'bg-poll-grey-900 text-poll-grey-300 border-poll-grey-700 hover:bg-poll-grey-800'}`}
@@ -552,24 +532,22 @@ const PollPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Chart Display */}
-                  <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg p-6">
+                  {/* Chart */}
+                  <div className="bg-poll-grey-900/50 rounded-lg p-4">
                     {chartData.datasets[0].data.every((v: number) => v === 0) ? (
                       <div className="text-poll-grey-500 text-center py-8">No votes yet</div>
+                      
                     ) : showBar ? (
-                      <div className="h-80">
-                        <Bar data={chartData} options={barChartOptions} />
-                      </div>
+                      <Bar data={chartData} options={ChartOptions} className="mt-6" />
                     ) : (
-                      <div className="h-80">
-                        <PieChart
-                          data={{
-                            labels: choices.map(c => c.text),
-                            values: choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length),
-                          }}
-                        />
-                      </div>
+                      <PieChart
+                        data={{
+                          labels: choices.map(c => c.text),
+                          values: choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length),
+                        }}
+                      />
                     )}
+                    
                   </div>
 
                   {/* Voting Form */}
