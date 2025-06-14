@@ -43,31 +43,10 @@ const HomePage: React.FC = () => (
 
       {/* Live Polls Section */}
       <div className="w-full lg:w-1/2 lg:sticky lg:top-20 self-start mb-8">
-        <div className="bg-poll-grey-800/50 border border-poll-grey-700 rounded-lg p-6 h-[calc(50vh)] flex flex-col">
-          <div className="flex items-center justify-between mb-6 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-poll-orange-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m12 8 6-3-6-3v14" />
-                  <path d="m8 11-4 2 4 2" />
-                </svg>
-              </span>
-              <h2 className="text-3xl font-semibold">Recent Polls</h2>
-              
-            </div>
-            <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-[#14b8a6]/50 text-white border-[#14b8a6]/80">
-              LIVE
-            </span>
+        <div className="h-[calc(50vh)] flex flex-col">
+          <div className="flex items-center justify-between flex-shrink-0">
+            
+            
           </div>
           <div className="flex-1 overflow-hidden">
             <RecentPolls />

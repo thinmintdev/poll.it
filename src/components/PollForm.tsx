@@ -1,5 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, KeyboardEvent, FormEvent } from "react";
 import { supabase } from "../utils/supabaseClient";
+import { useRouter } from "next/navigation";
 import {
   XMarkIcon as CloseIcon,
   ClipboardIcon,
@@ -7,7 +8,8 @@ import {
   ShareIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  PlusIcon
+  PlusIcon,
+  ArrowTopRightOnSquareIcon
 } from "@heroicons/react/24/outline";
 
 // Constants
@@ -29,6 +31,7 @@ type PollFormState = {
 const MIN_CHOICES = 2;
 
 const PollForm: React.FC = () => {
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [catLoading, setCatLoading] = useState<boolean>(true);
   const [catError, setCatError] = useState<string>("");
@@ -158,6 +161,15 @@ const PollForm: React.FC = () => {
     }
   };
 
+  const handleGoToPoll = () => {
+    // Extract the poll ID from the URL
+    const pollId = pollUrl.split('/').pop();
+    if (pollId) {
+      router.push(`/poll/${pollId}`);
+      setShowModal(false);
+    }
+  };
+
   return (
     <>
       <form onSubmit={handleSubmit} className="w-full space-y-6">
@@ -250,7 +262,8 @@ const PollForm: React.FC = () => {
                 />
                 <button
                   onClick={handleCopy}
-                  className="px-4 bg-[#14b8a6] text-white rounded-md hover:bg-[#0d9488] transition-colors flex items-center gap-2"
+                  className="px-3 bg-[#14b8a6] text-white rounded-md hover:bg-[#0d9488] transition-colors flex items-center gap-1"
+                  aria-label="Copy poll link"
                 >
                   {copied ? (
                     <>
@@ -264,6 +277,14 @@ const PollForm: React.FC = () => {
                     </>
                   )}
                 </button>
+                <button
+                  onClick={handleGoToPoll}
+                  className="px-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center gap-1"
+                  aria-label="Go to poll"
+                >
+                  <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                  View
+                </button>
               </div>
               {pollPassword && (
                 <div className="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-md">
@@ -271,6 +292,13 @@ const PollForm: React.FC = () => {
                   <p className="text-yellow-100 font-mono mt-1">{pollPassword}</p>
                 </div>
               )}
+              <button
+                onClick={handleGoToPoll}
+                className="w-full h-12 bg-[#14b8a6] hover:bg-[#0d9488] text-white font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
+              >
+                <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+                Go to Poll
+              </button>
             </div>
           </div>
         </div>

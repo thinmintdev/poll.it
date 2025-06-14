@@ -188,11 +188,11 @@ const RecentPolls: React.FC = () => {
               >
                 {/* Poll Header */}
                 <div className="mb-4">
-                  <h3 className="text-white text-lg font-semibold mb-2 line-clamp-2">
+                  <h3 className="text-white text-2xl font-semibold mb-2 line-clamp-2">
                     {poll.question}
                   </h3>
                   <div className="flex items-center gap-4 flex-wrap">
-                    <span className="inline-flex items-center rounded-full bg-[#14b8a6] px-2 py-0.5 text-xs font-medium text-[#14b8a6]">
+                    <span className="inline-flex items-center rounded-full bg-[#14b8a6] px-2 py-0.5 text-xs font-medium text-[#ffffff]">
                       LIVE
                     </span>
                     <span className="text-sm text-gray-400">

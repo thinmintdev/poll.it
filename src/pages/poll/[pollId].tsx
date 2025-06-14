@@ -183,13 +183,14 @@ const PollPage: React.FC = () => {
   // Fetch votes and chat as functions for reuse
   const fetchVotes = useCallback(async () => {
     if (!pollId) return; // Added guard for pollId
+    console.log('Fetching votes for poll:', pollId);
     const { data: votesData, error } = await supabase
       .from("votes")
       .select("id, choice_id, user_id, profiles(display_name)")
       .eq("poll_id", pollId);
     if (error) console.error('Votes fetch error:', error);
+    console.log('Votes fetched successfully:', votesData?.length || 0, 'votes');
     setVotes(votesData || []);
-    console.log('votes', votesData);
   }, [pollId]);
   const fetchChat = useCallback(async () => {
     if (!pollId) return; // Added guard for pollId
@@ -258,20 +259,28 @@ const PollPage: React.FC = () => {
 
     const votesChannel = supabase
       .channel('votes-poll-' + pollId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `poll_id=eq.${pollId}` }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `poll_id=eq.${pollId}` }, (payload: any) => {
         console.log('Votes event received:', payload);
         fetchVotes();
       });
 
     const chatChannel = supabase
       .channel('chat-poll-' + pollId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages', filter: `poll_id=eq.${pollId}` }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages', filter: `poll_id=eq.${pollId}` }, (payload: any) => {
         console.log('Chat event received:', payload);
         fetchChat();
       });
 
-    votesChannel.subscribe();
-    chatChannel.subscribe();
+    votesChannel.subscribe((status: string) => {
+      console.log(`Votes channel status: ${status}`);
+      if (status === 'SUBSCRIBED') {
+        console.log('Successfully subscribed to votes channel');
+      }
+    });
+    
+    chatChannel.subscribe((status: string) => {
+      console.log(`Chat channel status: ${status}`);
+    });
 
     return () => {
       supabase.removeChannel(votesChannel);
@@ -289,6 +298,11 @@ const PollPage: React.FC = () => {
       setHasVoted(true);
     }
   }, [pollId, user, votes]);
+
+  // Ensure charts update immediately after votes change
+  useEffect(() => {
+    console.log('Votes updated, chart data should refresh:', votes.length, 'total votes');
+  }, [votes]);
 
   // Chart data
   const { chartData, maxVoteCount } = useMemo(() => {
@@ -400,7 +414,9 @@ const PollPage: React.FC = () => {
       }
       if (!user) localStorage.setItem(`voted_${pollId}`, "1");
       setHasVoted(true); // Immediately set hasVoted to true on success
-      // Do NOT refetch votes here; let realtime handle it
+      
+      // Immediately fetch votes to update the chart
+      fetchVotes();
     } catch (err: any) {
       setError("Failed to submit vote. Please try again.");
     }
@@ -561,18 +577,23 @@ const PollPage: React.FC = () => {
                   <div className="bg-poll-grey-900/50 rounded-lg p-4">
                     {chartData.datasets[0].data.every((v: number) => v === 0) ? (
                       <div className="text-poll-grey-500 text-center py-8">No votes yet</div>
-                      
                     ) : showBar ? (
-                      <Bar data={chartData} options={ChartOptions} className="mt-6" />
+                      <div className="h-80">
+                        <Bar 
+                          key={`bar-chart-${votes.length}`}
+                          data={chartData} 
+                          options={ChartOptions} 
+                        />
+                      </div>
                     ) : (
                       <PieChart
+                        key={`pie-chart-${votes.length}`}
                         data={{
                           labels: choices.map(c => c.text),
                           values: choices.map(c => votes.filter(v => String(v.choice_id) === String(c.id)).length),
                         }}
                       />
                     )}
-                    
                   </div>
 
                   {/* Voting Form */}
