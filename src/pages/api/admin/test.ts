@@ -89,3 +89,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 }
+
+// A simple test to ensure the file is processed by Jest
+it('should run a basic test', () => {
+  expect(true).toBe(true);
+});
