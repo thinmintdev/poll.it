@@ -11,6 +11,7 @@ import {
   CodeBracketIcon
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
+import { Calendar1Icon, ChartBarBigIcon, Clock } from "lucide-react";
 interface Choice {
   id: string;
   text: string;
@@ -274,14 +275,17 @@ const RecentPolls: React.FC = () => {
                     {poll.question}
                   </h3>
                   <div className="flex items-center gap-4 flex-wrap">
-                    <span className="inline-flex items-center rounded-full bg-[#14b8a6] px-2 py-0.5 text-xs font-medium text-[#ffffff]">
-                      LIVE
-                    </span>
-                    <span className="text-sm text-gray-400">
-                      {(poll.votes || []).length} votes
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      Created {timeAgo}
+                    {/* {poll.category && (
+                      <span className="px-2 py-0.5 bg-teal-500 text-white rounded-full font-semibold text-xs">
+                      {poll.category.name}
+                      </span>
+                    )} 
+                    <span className="text-sm align-middle text-gray-500">
+                      {(poll.votes || []).length} VOTES
+                    </span>*/}
+                    <span className="text-sm text-gray-500 flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {timeAgo}
                     </span>
                   </div>
                 </div>
@@ -365,13 +369,13 @@ const RecentPolls: React.FC = () => {
                 </div>
               
                   <button 
-                    className="h-10 rounded-md bg-[#151b26] border border-[#2f3a4e] text-[#14b8a6] font-medium hover:bg-[#14b8a6]/10 transition-all duration-200 ease-in-out flex items-center justify-center gap-2 transform hover:scale-[1.02] px-4"
+                    className="h-8 rounded-md bg-[#151b26] border border-[#2f3a4e] text-[#14b8a6] font-medium hover:bg-[#14b8a6]/10 transition-all duration-200 ease-in-out flex items-center justify-center gap-2 transform hover:scale-[1.02] px-3"
                     onClick={(e) => {
                       e.stopPropagation();
                       router.push(`/poll/${poll.id}`);
                     }}
                   >
-                    <ChartBarIcon className="w-5 h-5" />
+                    <ChartBarBigIcon className="w-5 h-5 text-[#14b8a6]" />
                     Vote Now
                   </button>
                 </div>

@@ -10,6 +10,7 @@ import {
   CodeBracketIcon,
   CheckIcon, // For copy feedback
 } from '@heroicons/react/24/outline';
+import { Calendar1Icon } from 'lucide-react';
 
 interface PollCardProps {
   poll: PollData;
@@ -42,7 +43,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, voteStats, totalVotes, onOpen
         </Link>
       </div>
 
-      <div className="flex items-center space-x-2 text-xs text-gray-400 mb-3">
+      <div className="flex items-center space-x-2 text-[10px] text-gray-400 mb-3">
         {poll.category?.name && (
             <span className="px-2 py-0.5 bg-teal-500 text-white rounded-full font-semibold text-[10px]">
                 LIVE
@@ -50,7 +51,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, voteStats, totalVotes, onOpen
         )}
         <span>{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</span>
         <span>&bull;</span>
-        <span>Created {new Date(poll.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <span><Calendar1Icon ></Calendar1Icon>{new Date(poll.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
       </div>
       
       <div className="space-y-2 mb-4 flex-grow">
