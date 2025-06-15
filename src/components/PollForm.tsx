@@ -9,7 +9,9 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   PlusIcon,
-  ArrowTopRightOnSquareIcon
+  ArrowTopRightOnSquareIcon,
+  CodeBracketIcon,
+  LinkIcon
 } from "@heroicons/react/24/outline";
 
 // Constants
@@ -45,6 +47,7 @@ const PollForm: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [pollUrl, setPollUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const [pollPassword, setPollPassword] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -161,6 +164,18 @@ const PollForm: React.FC = () => {
     }
   };
 
+  const handleCopyEmbed = async () => {
+    try {
+      // Create an iframe embed code
+      const embedCode = `<iframe src="${pollUrl}/embed" width="100%" height="500" frameborder="0" style="border: 1px solid #ccc; border-radius: 8px;"></iframe>`;
+      await navigator.clipboard.writeText(embedCode);
+      setEmbedCopied(true);
+      setTimeout(() => setEmbedCopied(false), 1500);
+    } catch {
+      setError("Failed to copy embed code");
+    }
+  };
+
   const handleGoToPoll = () => {
     // Extract the poll ID from the URL
     const pollId = pollUrl.split('/').pop();
@@ -168,6 +183,29 @@ const PollForm: React.FC = () => {
       router.push(`/poll/${pollId}`);
       setShowModal(false);
     }
+  };
+
+  // Social sharing functions
+  const shareOnTwitter = () => {
+    const text = `Check out my poll: ${form.question}`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(pollUrl)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const shareOnFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pollUrl)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const shareOnLinkedIn = () => {
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pollUrl)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const shareOnWhatsApp = () => {
+    const text = `Check out my poll: ${form.question} ${pollUrl}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -273,7 +311,7 @@ const PollForm: React.FC = () => {
                   ) : (
                     <>
                       <ClipboardIcon className="w-5 h-5" />
-                      Copy
+                      <span className="text-xs">COPY</span>
                     </>
                   )}
                 </button>
@@ -283,22 +321,90 @@ const PollForm: React.FC = () => {
                   aria-label="Go to poll"
                 >
                   <ArrowTopRightOnSquareIcon className="w-5 h-5" />
-                  View
+                  <span className="text-xs">VIEW</span>
                 </button>
               </div>
+              
+              
               {pollPassword && (
                 <div className="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-md">
                   <p className="text-yellow-200 text-sm font-medium">Private Poll Password</p>
                   <p className="text-yellow-100 font-mono mt-1">{pollPassword}</p>
                 </div>
               )}
-              <button
-                onClick={handleGoToPoll}
-                className="w-full h-12 bg-[#14b8a6] hover:bg-[#0d9488] text-white font-semibold rounded-md transition-colors flex items-center justify-center gap-2"
-              >
-                <ArrowTopRightOnSquareIcon className="w-5 h-5" />
-                Go to Poll
-              </button>
+              
+              {/* Social Share Section */}
+              <div className="mt-4">
+                <h4 className="text-white text-sm font-medium mb-3 flex items-center gap-1.5">
+                  <ShareIcon className="h-4 w-4 text-[#14b8a6]" />
+                  Share on Social Media
+                </h4>
+                <div className="flex gap-6 justify-center">
+                  
+                  {/* Direct Link */}
+                  <button
+                    onClick={handleCopy}
+                    className="p-2 bg-[#14b8a6] hover:bg-[#0d9488] text-white rounded-full transition-colors"
+                    aria-label="Copy direct link"
+                  >
+                    <LinkIcon className="w-5 h-5" />
+                  </button>
+                  {/* Embed */}
+                  <button
+                    onClick={handleCopyEmbed}
+                    className="p-2 bg-poll-grey-500 hover:bg-poll-grey-600 text-white rounded-full transition-colors"
+                    aria-label="Copy Embed Code"
+                  >
+                    <CodeBracketIcon className="w-5 h-5 text-[#ffffff]" viewbox="0 0 24 24" />
+                  </button>
+                  {/* Twitter/X */}
+                  <button
+                    onClick={shareOnTwitter}
+                    className="p-2 bg-[#1DA1F2] hover:bg-[#1a96e0] text-white rounded-full transition-colors"
+                    aria-label="Share on Twitter"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  </button>
+                  
+                  {/* Facebook */}
+                  <button
+                    onClick={shareOnFacebook}
+                    className="p-2 bg-[#1877F2] hover:bg-[#166fe0] text-white rounded-full transition-colors"
+                    aria-label="Share on Facebook"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396v8.01Z" />
+                    </svg>
+                  </button>
+                  
+                  {/* LinkedIn */}
+                  <button
+                    onClick={shareOnLinkedIn}
+                    className="p-2 bg-[#0077B5] hover:bg-[#006aa3] text-white rounded-full transition-colors"
+                    aria-label="Share on LinkedIn"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6.5 8a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM5 10a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8ZM11 19h1a1 1 0 0 0 1-1v-4.5c0-1.235.902-2.5 2.5-2.5a1 1 0 0 1 1 1V18a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-5.5a3.5 3.5 0 0 0-3.5-3.5A3.5 3.5 0 0 0 13 10.5V10a1 1 0 0 0-1-1h-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1Z" />
+                    </svg>
+                  </button>
+                  
+                  {/* WhatsApp */}
+                  <button
+                    onClick={shareOnWhatsApp}
+                    className="p-2 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-full transition-colors"
+                    aria-label="Share on WhatsApp"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M17.415 14.382c-.298-.149-1.759-.867-2.031-.967-.272-.099-.47-.148-.669.15-.198.296-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.019-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.497.1-.198.05-.371-.025-.52-.074-.149-.668-1.612-.916-2.207-.241-.579-.486-.5-.668-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.064 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.625.712.227 1.36.195 1.871.118.57-.085 1.758-.719 2.006-1.413.247-.694.247-1.289.173-1.413-.074-.124-.272-.198-.57-.347zm-5.422 7.403h-.004a9.87 9.87 0 01-5.032-1.378l-.36-.214-3.742.982.999-3.648-.235-.374a9.861 9.861 0 01-1.511-5.26c.002-5.45 4.436-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884zm0-18.271A8.383 8.383 0 003.615 12a8.307 8.307 0 001.115 4.177l-1.186 4.328 4.432-1.163A8.366 8.366 0 0011.992 20.5a8.383 8.383 0 008.378-8.38 8.34 8.34 0 00-2.457-5.936 8.339 8.339 0 00-5.92-2.47z" />
+                    </svg>
+                  </button>
+                  
+                </div>
+              </div>
+              
+              
             </div>
           </div>
         </div>
