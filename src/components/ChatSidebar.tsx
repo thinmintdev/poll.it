@@ -7,6 +7,7 @@ import { ScrollArea } from "./ui/scroll-area"
 import { Badge } from "./ui/badge"
 import { Avatar, AvatarFallback } from "./ui/avatar"
 import { MessageCircle, Send, Search, MoreVertical, Phone, Video, X, Minimize2 } from "lucide-react"
+import { supabase } from "../utils/supabaseClient"
 
 export interface Message {
   id: number
@@ -99,8 +100,38 @@ export function ChatSidebar({
   const filteredUsers = users.filter((user) => user.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   useEffect(() => {
-    // Subscription logic removed. All realtime updates should be handled in the parent poll page.
-  }, []);
+    // Set up realtime subscription for chat messages if pollId is provided
+    if (!pollId || !onLiveUpdate) return;
+
+    const chatChannel = supabase
+      .channel(`chat-sidebar-${pollId}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'chat_messages',
+        filter: `poll_id=eq.${pollId}`
+      }, (payload) => {
+        console.log('ChatSidebar: New message received:', payload);
+        onLiveUpdate(); // Notify parent to refetch messages
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'chat_messages',
+        filter: `poll_id=eq.${pollId}`
+      }, (payload) => {
+        console.log('ChatSidebar: Message updated:', payload);
+        onLiveUpdate(); // Notify parent to refetch messages
+      });
+
+    chatChannel.subscribe((status) => {
+      console.log(`ChatSidebar realtime status: ${status}`);
+    });
+
+    return () => {
+      supabase.removeChannel(chatChannel);
+    };
+  }, [pollId, onLiveUpdate]);
 
   if (!isOpen) return null
 

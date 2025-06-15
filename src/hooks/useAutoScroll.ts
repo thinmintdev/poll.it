@@ -15,6 +15,9 @@ function useAutoScroll<T extends HTMLElement>(
   const [isScrollInitialized, setIsScrollInitialized] = useState(false);
   const animationFrameIdRef = useRef<number | null>(null);
   const scrollingRef = useRef(true);
+  const lastScrollTopRef = useRef(0);
+  const isManualScrollingRef = useRef(false);
+  const manualScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (scrollContainerRef.current && !isScrollInitialized) {
@@ -40,30 +43,37 @@ function useAutoScroll<T extends HTMLElement>(
 
 
     const scroll = () => {
-      if (!scrollingRef.current || !container) return;
+      if (!scrollingRef.current || !container || isManualScrollingRef.current) return;
 
       container.scrollTop += scrollSpeed;
+      lastScrollTopRef.current = container.scrollTop;
 
-      // Check if scrolled to the bottom and loop
-      if (Math.ceil(container.scrollTop + container.clientHeight) >= container.scrollHeight) {
-        // If the content is shorter than the container, don't try to loop.
-        if (container.scrollHeight > container.clientHeight) {
-            const overshoot = (container.scrollTop + container.clientHeight) - container.scrollHeight;
-            container.scrollTop = Math.max(0, overshoot); // Ensure scrollTop is not negative
-        } else {
-            // Content is not scrollable, stop animation
-            if (animationFrameIdRef.current) {
-                cancelAnimationFrame(animationFrameIdRef.current);
-                animationFrameIdRef.current = null;
-            }
-            return;
-        }
+      // For infinite scroll with 5x duplicated content: [...items, ...items, ...items, ...items, ...items]
+      // Reset when we reach the end of the 3rd set (before the 4th set)
+      const totalHeight = container.scrollHeight;
+      const singleContentHeight = totalHeight / 5; // Height of one set of items
+      
+      // When we reach the end of the 3rd set, jump back to the beginning of the 2nd set
+      // This creates a buffer zone and truly seamless infinite scrolling
+      if (container.scrollTop >= singleContentHeight * 3 - 20) { // Larger buffer
+        container.scrollTop = singleContentHeight; // Jump to start of 2nd set
+        lastScrollTopRef.current = singleContentHeight;
+        console.log('Infinite scroll reset - jumped from 3rd set back to 2nd set');
       }
+      
       animationFrameIdRef.current = requestAnimationFrame(scroll);
     };
 
     // Start scrolling only if content is taller than container
     if (container.scrollHeight > container.clientHeight) {
+        // For 5x duplicated content, start from the 2nd set to allow seamless infinite scroll
+        const singleContentHeight = container.scrollHeight / 5;
+        if (container.scrollTop < singleContentHeight && dependencies.some(dep => typeof dep === 'number' && dep > 0)) {
+          container.scrollTop = singleContentHeight; // Start from 2nd set
+          lastScrollTopRef.current = singleContentHeight; // Initialize tracking
+          console.log('Initialized scroll position to 2nd set:', singleContentHeight);
+        }
+        
         scrollingRef.current = true;
         if (!animationFrameIdRef.current) {
             animationFrameIdRef.current = requestAnimationFrame(scroll);
@@ -103,14 +113,75 @@ function useAutoScroll<T extends HTMLElement>(
       container.addEventListener('mouseleave', handleMouseLeave);
     }
 
+    // Add manual scroll detection
+    const handleManualScroll = () => {
+      if (!container) return;
+      
+      const currentScrollTop = container.scrollTop;
+      const scrollDiff = Math.abs(currentScrollTop - lastScrollTopRef.current);
+      
+      // Handle infinite scroll reset for manual scrolling too
+      const totalHeight = container.scrollHeight;
+      const singleContentHeight = totalHeight / 5;
+      
+      // If manually scrolled to boundaries, reset position
+      if (currentScrollTop >= singleContentHeight * 4 - 50) {
+        // Near the end, jump to 2nd set
+        container.scrollTop = singleContentHeight;
+        lastScrollTopRef.current = singleContentHeight;
+        console.log('Manual scroll reset - jumped from near end to 2nd set');
+        return;
+      } else if (currentScrollTop <= 50) {
+        // Near the beginning, jump to 3rd set
+        container.scrollTop = singleContentHeight * 2;
+        lastScrollTopRef.current = singleContentHeight * 2;
+        console.log('Manual scroll reset - jumped from near beginning to 3rd set');
+        return;
+      }
+      
+      // If scroll position changed significantly and we didn't cause it, it's manual
+      if (scrollDiff > 10 && !isManualScrollingRef.current) {
+        console.log('Manual scroll detected, pausing auto-scroll');
+        isManualScrollingRef.current = true;
+        
+        // Clear existing timeout
+        if (manualScrollTimeoutRef.current) {
+          clearTimeout(manualScrollTimeoutRef.current);
+        }
+        
+        // Resume auto-scroll after user stops scrolling
+        manualScrollTimeoutRef.current = setTimeout(() => {
+          console.log('Resuming auto-scroll after manual scroll pause');
+          isManualScrollingRef.current = false;
+          lastScrollTopRef.current = container.scrollTop;
+          if (!animationFrameIdRef.current && scrollingRef.current) {
+            animationFrameIdRef.current = requestAnimationFrame(scroll);
+          }
+        }, 2000); // Resume after 2 seconds of no manual scrolling
+      }
+      
+      // Update last scroll position for manual scroll detection
+      if (isManualScrollingRef.current) {
+        lastScrollTopRef.current = currentScrollTop;
+      }
+    };
+    
+    container.addEventListener('scroll', handleManualScroll, { passive: true });
+
     return () => {
       if (animationFrameIdRef.current) {
         cancelAnimationFrame(animationFrameIdRef.current);
         animationFrameIdRef.current = null;
       }
+      if (manualScrollTimeoutRef.current) {
+        clearTimeout(manualScrollTimeoutRef.current);
+      }
       if (pauseOnHover && container) {
         container.removeEventListener('mouseenter', handleMouseEnter);
         container.removeEventListener('mouseleave', handleMouseLeave);
+      }
+      if (container) {
+        container.removeEventListener('scroll', handleManualScroll);
       }
     };
   }, [dependencies, isScrollInitialized, scrollSpeed, pauseOnHover, enabled]);

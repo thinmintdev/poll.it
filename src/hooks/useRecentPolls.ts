@@ -77,14 +77,54 @@ export const useRecentPolls = (): UseRecentPollsReturn => {
   useEffect(() => {
     setLoading(true); // Initial load
     fetchPolls();
-    const interval = setInterval(fetchPolls, 30000); // Poll every 30 seconds
-    return () => clearInterval(interval);
+    
+    // Set up realtime subscriptions for polls, votes, and choices
+    const pollsChannel = supabase
+      .channel('recent-polls-updates')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'polls' 
+      }, (payload) => {
+        console.log('Polls realtime update:', payload);
+        fetchPolls(); // Refetch when polls change
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'votes' 
+      }, (payload) => {
+        console.log('Votes realtime update:', payload);
+        fetchPolls(); // Refetch when votes change
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'choices' 
+      }, (payload) => {
+        console.log('Choices realtime update:', payload);
+        fetchPolls(); // Refetch when choices change
+      });
+
+    pollsChannel.subscribe((status) => {
+      console.log('Recent polls realtime status:', status);
+    });
+
+    // Also keep a backup polling mechanism but less frequent
+    const interval = setInterval(fetchPolls, 60000); // Poll every 60 seconds as backup
+    
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(pollsChannel);
+    };
   }, [fetchPolls]);
 
   const getVoteStats = useCallback((poll: PollData): { voteStats: ChoiceWithStats[]; totalVotes: number } => {
-    const totalVotes = poll.votes.length;
-    const voteStats = poll.choices.map(choice => {
-      const choiceVotes = poll.votes.filter(v => v.choice_id === choice.id).length;
+    const votes = poll.votes || [];
+    const choices = poll.choices || [];
+    const totalVotes = votes.length;
+    const voteStats = choices.map(choice => {
+      const choiceVotes = votes.filter(v => v.choice_id === choice.id).length;
       const percentage = totalVotes > 0 ? Math.round((choiceVotes / totalVotes) * 100) : 0;
       return {
         ...choice,
