@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useRecentPolls, type PollData, type ChoiceWithStats } from "../hooks/useRecentPolls";
 import useAutoScroll from "../hooks/useAutoScroll";
@@ -26,11 +26,13 @@ const RecentPolls: React.FC = () => {
   });
 
   // Create duplicated polls for seamless infinite scroll - use more copies for better infinite effect
-  const infinitePolls = polls.length > 0 ? [...polls, ...polls, ...polls, ...polls, ...polls] : [];
+  const infinitePolls = useMemo(() => {
+    return polls.length > 0 ? [...polls, ...polls, ...polls, ...polls, ...polls] : [];
+  }, [polls]);
 
-  // Debug logging to check if autoscroll is working
+  // Debug logging to check if autoscroll is working (development only)
   useEffect(() => {
-    if (scrollContainerRef.current && polls.length > 0) {
+    if (process.env.NODE_ENV === 'development' && scrollContainerRef.current && polls.length > 0) {
       const container = scrollContainerRef.current;
       console.log('Container dimensions:', {
         scrollHeight: container.scrollHeight,
@@ -52,18 +54,20 @@ const RecentPolls: React.FC = () => {
     return `${window.location.origin}/poll/${pollId}`;
   };
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     if (!selectedPoll) return;
     try {
       await navigator.clipboard.writeText(getPollUrl(selectedPoll.id));
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (error) {
-      console.error("Failed to copy to clipboard");
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Failed to copy to clipboard");
+      }
     }
-  };
+  }, [selectedPoll]);
 
-  const handleCopyEmbed = async () => {
+  const handleCopyEmbed = useCallback(async () => {
     if (!selectedPoll) return;
     try {
       const embedCode = `<iframe src="${getPollUrl(selectedPoll.id)}/embed" width="100%" height="500" frameborder="0" style="border: 1px solid #ccc; border-radius: 8px;"></iframe>`;
@@ -71,41 +75,43 @@ const RecentPolls: React.FC = () => {
       setEmbedCopied(true);
       setTimeout(() => setEmbedCopied(false), 1500);
     } catch (error) {
-      console.error("Failed to copy embed code");
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Failed to copy embed code");
+      }
     }
-  };
+  }, [selectedPoll]);
 
-  const handleGoToPoll = () => {
+  const handleGoToPoll = useCallback(() => {
     if (!selectedPoll) return;
     router.push(`/poll/${selectedPoll.id}`);
     setShowShareModal(false);
-  };
+  }, [selectedPoll, router]);
 
-  const shareOnTwitter = () => {
+  const shareOnTwitter = useCallback(() => {
     if (!selectedPoll) return;
     const text = `Check out this poll: ${selectedPoll.question}`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(getPollUrl(selectedPoll.id))}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  }, [selectedPoll]);
 
-  const shareOnFacebook = () => {
+  const shareOnFacebook = useCallback(() => {
     if (!selectedPoll) return;
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getPollUrl(selectedPoll.id))}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  }, [selectedPoll]);
 
-  const shareOnLinkedIn = () => {
+  const shareOnLinkedIn = useCallback(() => {
     if (!selectedPoll) return;
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getPollUrl(selectedPoll.id))}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  }, [selectedPoll]);
 
-  const shareOnWhatsApp = () => {
+  const shareOnWhatsApp = useCallback(() => {
     if (!selectedPoll) return;
     const text = `Check out this poll: ${selectedPoll.question} ${getPollUrl(selectedPoll.id)}`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  }, [selectedPoll]);
 
   return (
     <div 
@@ -123,7 +129,7 @@ const RecentPolls: React.FC = () => {
       {loading ? (
         <div className="text-gray-400 text-center py-8">Loading polls...</div>
       ) : polls.length === 0 ? (
-        <div className="text-gray-400 text-center py-8">No active polls in the last 24 hours.</div>
+        <div className="text-gray-400 text-center py-8">No public polls available.</div>
       ) : (
         <div className="space-y-4 py-4 px-4">
           {infinitePolls.map((poll, index) => {
@@ -136,19 +142,55 @@ const RecentPolls: React.FC = () => {
             // Create unique key for duplicated polls
             const uniqueKey = `${poll.id}-${index}`;
             
+            const handlePollClick = () => router.push(`/poll/${poll.id}`);
+            const handlePollKeyDown = (e: React.KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                router.push(`/poll/${poll.id}`);
+              }
+            };
+            const handleShareClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              setSelectedPoll(poll);
+              setShowShareModal(true);
+            };
+            const handleCopyClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleCopy();
+            };
+            const handleEmbedClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleCopyEmbed();
+            };
+            const handleTwitterClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              shareOnTwitter();
+            };
+            const handleFacebookClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              shareOnFacebook();
+            };
+            const handleLinkedInClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              shareOnLinkedIn();
+            };
+            const handleWhatsAppClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              shareOnWhatsApp();
+            };
+            const handleVoteClick = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              router.push(`/poll/${poll.id}`);
+            };
+            
             return (
               <div
                 key={uniqueKey}
                 role="button"
                 tabIndex={0}
                 className="rounded-lg bg-[#1e2736] border border-[#2f3a4e] hover:border-[#14b8a6]/50 hover:bg-[#1e2736]/80 p-4 transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 relative"
-                onClick={() => router.push(`/poll/${poll.id}`)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    router.push(`/poll/${poll.id}`);
-                  }
-                }}
+                onClick={handlePollClick}
+                onKeyDown={handlePollKeyDown}
               >
                 
 
@@ -203,7 +245,7 @@ const RecentPolls: React.FC = () => {
                 </div>
                   {/* Copy Link Button */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleCopy(); }}
+                    onClick={handleCopyClick}
                     className="p-1 text-gray-400 hover:text-gray-100 transition-colors"
                     aria-label="Copy direct link"
                   >
@@ -211,7 +253,7 @@ const RecentPolls: React.FC = () => {
                   </button>
                   {/* Copy Embed Button */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleCopyEmbed(); }}
+                    onClick={handleEmbedClick}
                     className="p-1 text-gray-400 hover:text-gray-100 transition-colors"
                     aria-label="Copy Embed Code"
                   >
@@ -219,7 +261,7 @@ const RecentPolls: React.FC = () => {
                   </button>
                   {/* Twitter Button */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); shareOnTwitter(); }}
+                    onClick={handleTwitterClick}
                     className="p-1 text-gray-400 hover:text-gray-100 transition-colors"
                     aria-label="Share on Twitter"
                   >
@@ -227,7 +269,7 @@ const RecentPolls: React.FC = () => {
                   </button>
                   {/* Facebook Button */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); shareOnFacebook(); }}
+                    onClick={handleFacebookClick}
                     className="p-1 text-gray-400 hover:text-gray-100 transition-colors"
                     aria-label="Share on Facebook"
                   >
@@ -235,7 +277,7 @@ const RecentPolls: React.FC = () => {
                   </button>
                   {/* LinkedIn Button */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); shareOnLinkedIn(); }}
+                    onClick={handleLinkedInClick}
                     className="p-1 text-gray-400 hover:text-gray-100 transition-colors"
                     aria-label="Share on LinkedIn"
                   >
@@ -243,7 +285,7 @@ const RecentPolls: React.FC = () => {
                   </button>
                   {/* WhatsApp Button */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); shareOnWhatsApp(); }}
+                    onClick={handleWhatsAppClick}
                     className="p-1 text-gray-400 hover:text-gray-100 transition-colors"
                     aria-label="Share on WhatsApp"
                   >
@@ -254,10 +296,7 @@ const RecentPolls: React.FC = () => {
                   <button 
                     className="h-8 rounded-md bg-[#151b26] border border-[#2f3a4e] text-[#14b8a6]
                      font-medium hover:bg-[#14b8a6]/10 transition-all duration-200 ease-in-out flex items-center justify-center gap-2 transform hover:scale-[1.02] px-3"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/poll/${poll.id}`);
-                    }}
+                    onClick={handleVoteClick}
                   >
                     <ChartBarBigIcon className="w-5 h-5 text-[#14b8a6]" />
                     Vote Now

@@ -58,7 +58,9 @@ function useAutoScroll<T extends HTMLElement>(
       if (container.scrollTop >= singleContentHeight * 3 - 20) { // Larger buffer
         container.scrollTop = singleContentHeight; // Jump to start of 2nd set
         lastScrollTopRef.current = singleContentHeight;
-        console.log('Infinite scroll reset - jumped from 3rd set back to 2nd set');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Infinite scroll reset - jumped from 3rd set back to 2nd set');
+        }
       }
       
       animationFrameIdRef.current = requestAnimationFrame(scroll);
@@ -71,7 +73,9 @@ function useAutoScroll<T extends HTMLElement>(
         if (container.scrollTop < singleContentHeight && dependencies.some(dep => typeof dep === 'number' && dep > 0)) {
           container.scrollTop = singleContentHeight; // Start from 2nd set
           lastScrollTopRef.current = singleContentHeight; // Initialize tracking
-          console.log('Initialized scroll position to 2nd set:', singleContentHeight);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Initialized scroll position to 2nd set:', singleContentHeight);
+          }
         }
         
         scrollingRef.current = true;
@@ -129,19 +133,25 @@ function useAutoScroll<T extends HTMLElement>(
         // Near the end, jump to 2nd set
         container.scrollTop = singleContentHeight;
         lastScrollTopRef.current = singleContentHeight;
-        console.log('Manual scroll reset - jumped from near end to 2nd set');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Manual scroll reset - jumped from near end to 2nd set');
+        }
         return;
       } else if (currentScrollTop <= 50) {
         // Near the beginning, jump to 3rd set
         container.scrollTop = singleContentHeight * 2;
         lastScrollTopRef.current = singleContentHeight * 2;
-        console.log('Manual scroll reset - jumped from near beginning to 3rd set');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Manual scroll reset - jumped from near beginning to 3rd set');
+        }
         return;
       }
       
       // If scroll position changed significantly and we didn't cause it, it's manual
       if (scrollDiff > 10 && !isManualScrollingRef.current) {
-        console.log('Manual scroll detected, pausing auto-scroll');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Manual scroll detected, pausing auto-scroll');
+        }
         isManualScrollingRef.current = true;
         
         // Clear existing timeout
@@ -151,7 +161,9 @@ function useAutoScroll<T extends HTMLElement>(
         
         // Resume auto-scroll after user stops scrolling
         manualScrollTimeoutRef.current = setTimeout(() => {
-          console.log('Resuming auto-scroll after manual scroll pause');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Resuming auto-scroll after manual scroll pause');
+          }
           isManualScrollingRef.current = false;
           lastScrollTopRef.current = container.scrollTop;
           if (!animationFrameIdRef.current && scrollingRef.current) {

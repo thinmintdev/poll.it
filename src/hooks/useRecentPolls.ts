@@ -50,15 +50,13 @@ export const useRecentPolls = (): UseRecentPollsReturn => {
     // setLoading(true); // Set loading true only on initial load or explicit refresh
     setError(null);
     try {
-      const oneDayAgo = new Date();
-      oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-
+      // Get the most recent 30 polls regardless of date
       const { data, error: supabaseError } = await supabase
         .from('polls')
         .select('*, category:categories(id, name), choices(id, text), votes(choice_id)')
         .eq('visibility', 'public')
-        .gt('created_at', oneDayAgo.toISOString())
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(30);
 
       if (supabaseError) {
         throw supabaseError;
@@ -86,7 +84,9 @@ export const useRecentPolls = (): UseRecentPollsReturn => {
         schema: 'public', 
         table: 'polls' 
       }, (payload) => {
-        console.log('Polls realtime update:', payload);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Polls realtime update:', payload);
+        }
         fetchPolls(); // Refetch when polls change
       })
       .on('postgres_changes', { 
@@ -94,7 +94,9 @@ export const useRecentPolls = (): UseRecentPollsReturn => {
         schema: 'public', 
         table: 'votes' 
       }, (payload) => {
-        console.log('Votes realtime update:', payload);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Votes realtime update:', payload);
+        }
         fetchPolls(); // Refetch when votes change
       })
       .on('postgres_changes', { 
@@ -102,12 +104,16 @@ export const useRecentPolls = (): UseRecentPollsReturn => {
         schema: 'public', 
         table: 'choices' 
       }, (payload) => {
-        console.log('Choices realtime update:', payload);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Choices realtime update:', payload);
+        }
         fetchPolls(); // Refetch when choices change
       });
 
     pollsChannel.subscribe((status) => {
-      console.log('Recent polls realtime status:', status);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Recent polls realtime status:', status);
+      }
     });
 
     // Also keep a backup polling mechanism but less frequent

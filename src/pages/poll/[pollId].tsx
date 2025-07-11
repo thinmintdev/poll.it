@@ -183,13 +183,17 @@ const PollPage: React.FC = () => {
   // Fetch votes and chat as functions for reuse
   const fetchVotes = useCallback(async () => {
     if (!pollId) return; // Added guard for pollId
-    console.log('Fetching votes for poll:', pollId);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Fetching votes for poll:', pollId);
+    }
     const { data: votesData, error } = await supabase
       .from("votes")
       .select("id, choice_id, user_id, profiles(display_name)")
       .eq("poll_id", pollId);
     if (error) console.error('Votes fetch error:', error);
-    console.log('Votes fetched successfully:', votesData?.length || 0, 'votes');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Votes fetched successfully:', votesData?.length || 0, 'votes');
+    }
     setVotes(votesData || []);
   }, [pollId]);
   const fetchChat = useCallback(async () => {
@@ -201,7 +205,9 @@ const PollPage: React.FC = () => {
       .order("created_at");
     if (error) console.error('Chat fetch error:', error);
     setChat(chatData || []);
-    console.log('chat', chatData);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('chat', chatData);
+    }
   }, [pollId]);
 
   // Fetch poll, choices, votes, chat, and user
@@ -247,8 +253,10 @@ const PollPage: React.FC = () => {
       await fetchChat();
       setLoading(false);
       // Debug logs
-      console.log('pollId', pollId);
-      console.log('choices', choicesData);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('pollId', pollId);
+        console.log('choices', choicesData);
+      }
     };
     fetchData();
   }, [pollId, fetchVotes, fetchChat]); // Added fetchVotes and fetchChat
@@ -260,26 +268,35 @@ const PollPage: React.FC = () => {
     const votesChannel = supabase
       .channel('votes-poll-' + pollId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `poll_id=eq.${pollId}` }, (payload: any) => {
-        console.log('Votes event received:', payload);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Votes event received:', payload);
+        }
         fetchVotes();
       });
 
     const chatChannel = supabase
       .channel('chat-poll-' + pollId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages', filter: `poll_id=eq.${pollId}` }, (payload: any) => {
-        console.log('Chat event received:', payload);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Chat event received:', payload);
+        }
         fetchChat();
       });
 
     votesChannel.subscribe((status: string) => {
-      console.log(`Votes channel status: ${status}`);
-      if (status === 'SUBSCRIBED') {
-        console.log('Successfully subscribed to votes channel');
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Votes channel status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to votes channel');
+        }
+      } else if (status === 'SUBSCRIBED') {
       }
     });
     
     chatChannel.subscribe((status: string) => {
-      console.log(`Chat channel status: ${status}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Chat channel status: ${status}`);
+      }
     });
 
     return () => {
@@ -301,7 +318,9 @@ const PollPage: React.FC = () => {
 
   // Ensure charts update immediately after votes change
   useEffect(() => {
-    console.log('Votes updated, chart data should refresh:', votes.length, 'total votes');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Votes updated, chart data should refresh:', votes.length, 'total votes');
+    }
   }, [votes]);
 
   // Chart data

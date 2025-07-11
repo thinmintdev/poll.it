@@ -113,18 +113,20 @@ const PollForm: React.FC = () => {
     }
 
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setError("You must be logged in to create a poll");
-      return;
-    }
-
+    
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      // Add authorization header only if user is logged in
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+      
       const res = await fetch("/api/poll", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-        },
+        headers,
         body: JSON.stringify({
           question: form.question,
           choices: form.choices.filter(c => c.trim()),
