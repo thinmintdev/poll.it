@@ -4,6 +4,35 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+// Rate limiting for anonymous users
+const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+const MAX_ANONYMOUS_POLLS_PER_HOUR = 5;
+
+const getClientIP = (req: NextApiRequest): string => {
+  const forwarded = req.headers['x-forwarded-for'] as string;
+  const ip = forwarded ? forwarded.split(',')[0] : req.connection.remoteAddress;
+  return ip || 'unknown';
+};
+
+const checkRateLimit = (ip: string): boolean => {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(ip);
+  
+  if (!userLimit || now - userLimit.lastReset > RATE_LIMIT_WINDOW) {
+    // Reset or create new limit
+    rateLimitMap.set(ip, { count: 1, lastReset: now });
+    return true;
+  }
+  
+  if (userLimit.count >= MAX_ANONYMOUS_POLLS_PER_HOUR) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+};
+
 // Helper to generate random password
 const generatePassword = (length = 8) => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -19,24 +48,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  // Auth
+  // Auth (optional for anonymous users)
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const token = authHeader.replace("Bearer ", "");
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } }
-  });
+  let supabase;
+  let userId: string | null = null;
 
-  const { question, choices, visibility, category_id } = req.body;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.replace("Bearer ", "");
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    // Get user if authenticated
+    const { data: userData } = await supabase.auth.getUser(token);
+    if (userData?.user) {
+      userId = userData.user.id;
+    }
+  } else {
+    // Anonymous user - check rate limit
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const clientIP = getClientIP(req);
+    
+    if (!checkRateLimit(clientIP)) {
+      return res.status(429).json({ 
+        message: `Rate limit exceeded. Anonymous users can create up to ${MAX_ANONYMOUS_POLLS_PER_HOUR} polls per hour.` 
+      });
+    }
+  }
+
+  const { question, choices, visibility, category_id, allow_multiple } = req.body;
   if (!question || !choices || !Array.isArray(choices) || choices.length < 2 || !category_id) {
     return res.status(400).json({ message: "Missing required fields" });
   }
-
-  // Get user
-  const { data: userData } = await supabase.auth.getUser(token);
-  if (!userData?.user) return res.status(401).json({ message: "Unauthorized" });
 
   // Generate password for private polls
   let password: string | null = null;
@@ -51,8 +94,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       question,
       visibility,
       category_id,
-      user_id: userData.user.id,
+      user_id: userId,
       password,
+      allow_multiple: allow_multiple || false,
     })
     .select()
     .single();

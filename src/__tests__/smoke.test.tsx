@@ -4,5 +4,5 @@ import HomePage from '../pages/index';
 
 test('renders poll form', () => {
   render(<HomePage />);
-  expect(screen.getByLabelText(/create a new poll/i)).toBeInTheDocument();
+  expect(screen.getByText('Create New Poll')).toBeInTheDocument();
 }); 

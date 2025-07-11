@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-1 md:col-span-4">
             <Link href="/" className="text-2xl font-bold text-white hover:opacity-90 transition-opacity">
               Poll<span className="text-[#14b8a6]">.it</span>
             </Link>
@@ -25,36 +25,7 @@ const Footer: React.FC = () => {
               <span>Made with</span>
               <HeartIcon className="w-4 h-4 text-red-500" />
               <span>by</span>
-              <span className="flex items-center gap-1"> 
-                <BracketsIcon className="w-4 h-4 text-[#0253cf]" />
-                <a href="https://awideweb.com" target="_blank" rel="noopener noreferrer" className="text-[#0253cf] hover:underline">aWideWeb</a></span>
-              
-            </div>
-          </div>
-
-          {/* Product Links */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">Product</h3>
-            <div className="space-y-3">
-              <Link href="/" className="block text-poll-grey-400 hover:text-white transition-colors">
-                Home
-              </Link>
-              
-            </div>
-          </div>
-
-          {/* Support Links */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">Support</h3>
-            <div className="space-y-3">
-              
-              <Link href="/contact" className="block text-poll-grey-400 hover:text-white transition-colors">
-                Contact Us
-              </Link>
-              
-              <Link href="/terms" className="block text-poll-grey-400 hover:text-white transition-colors">
-                Terms of Service
-              </Link>
+              <a href="https://talaat.dev" target="_blank" rel="noopener noreferrer" className="text-[#14b8a6] hover:underline">talaat.dev</a>
             </div>
           </div>
         </div>
@@ -81,7 +52,7 @@ const Footer: React.FC = () => {
               </svg>
             </a>
             <a 
-              href="https://github.com" 
+              href="https://github.com/awideweb/poll.it-new" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-poll-grey-400 hover:text-[#14b8a6] transition-colors"

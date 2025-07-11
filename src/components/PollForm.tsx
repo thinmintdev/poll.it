@@ -28,6 +28,7 @@ type PollFormState = {
   choices: string[];
   visibility: PollVisibility;
   category_id: string;
+  allow_multiple: boolean;
 };
 
 const MIN_CHOICES = 2;
@@ -42,6 +43,7 @@ const PollForm: React.FC = () => {
     choices: ["", ""],
     visibility: "public",
     category_id: "",
+    allow_multiple: false,
   });
   const [error, setError] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
@@ -67,6 +69,7 @@ const PollForm: React.FC = () => {
           ...prev,
           category_id: uncategorized ? uncategorized.id : (data && data[0]?.id) || "",
           visibility: "public",
+          allow_multiple: false,
         }));
       }
       setCatLoading(false);
@@ -132,6 +135,7 @@ const PollForm: React.FC = () => {
           choices: form.choices.filter(c => c.trim()),
           visibility: form.visibility,
           category_id: form.category_id,
+          allow_multiple: form.allow_multiple,
         }),
       });
 
@@ -144,6 +148,7 @@ const PollForm: React.FC = () => {
         choices: ["", ""],
         visibility: "public",
         category_id: form.category_id,
+        allow_multiple: false,
       });
 
       // Show success modal
@@ -262,6 +267,71 @@ const PollForm: React.FC = () => {
           </button>
         </div>
 
+        {/* Advanced Options */}
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="text-white font-semibold flex items-center gap-2 hover:text-[#14b8a6] transition-colors"
+          >
+            {showAdvanced ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+            Advanced Options
+          </button>
+          
+          {showAdvanced && (
+            <div className="space-y-4 pl-7 border-l-2 border-[#2f3a4e]">
+              {/* Category Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                {catLoading ? (
+                  <div className="text-gray-400 text-sm">Loading categories...</div>
+                ) : catError ? (
+                  <div className="text-red-500 text-sm">{catError}</div>
+                ) : (
+                  <select
+                    value={form.category_id}
+                    onChange={(e) => setForm((prev) => ({ ...prev, category_id: e.target.value }))}
+                    className="w-full h-10 px-3 rounded-md bg-[#1e2736] border border-[#2f3a4e] text-white focus:outline-none focus:ring-2 focus:ring-[#14b8a6]"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Poll Visibility */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Visibility</label>
+                <select
+                  value={form.visibility}
+                  onChange={(e) => setForm((prev) => ({ ...prev, visibility: e.target.value as PollVisibility }))}
+                  className="w-full h-10 px-3 rounded-md bg-[#1e2736] border border-[#2f3a4e] text-white focus:outline-none focus:ring-2 focus:ring-[#14b8a6]"
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                </select>
+              </div>
+
+              {/* Multiple Choice Selection */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={form.allow_multiple}
+                    onChange={(e) => setForm((prev) => ({ ...prev, allow_multiple: e.target.checked }))}
+                    className="w-4 h-4 rounded border-[#2f3a4e] bg-[#1e2736] text-[#14b8a6] focus:ring-[#14b8a6] focus:ring-2"
+                  />
+                  Allow multiple selections
+                </label>
+                <p className="text-xs text-gray-400 mt-1">Allow voters to select multiple options</p>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Error Message */}
         {error && (
           <div className="text-red-500 text-sm">{error}</div>
@@ -357,7 +427,7 @@ const PollForm: React.FC = () => {
                     className="p-2 bg-poll-grey-500 hover:bg-poll-grey-600 text-white rounded-full transition-colors"
                     aria-label="Copy Embed Code"
                   >
-                    <CodeBracketIcon className="w-5 h-5 text-[#ffffff]" viewbox="0 0 24 24" />
+                    <CodeBracketIcon className="w-5 h-5 text-[#ffffff]" />
                   </button>
                   {/* Twitter/X */}
                   <button

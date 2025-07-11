@@ -220,7 +220,7 @@ const AdminPanel: FC = () => {
             
             {!error && process.env.NODE_ENV !== 'production' && (
               <p className="text-sm text-gray-500 text-center mt-4">
-                For testing, use username: <strong>admin</strong> and password: <strong>password</strong>
+                Development mode: Check your environment variables for test credentials
               </p>
             )}
           </form>
