@@ -17,10 +17,6 @@ const Footer: React.FC = () => {
             <Link href="/" className="text-2xl font-bold text-white hover:opacity-90 transition-opacity">
               Poll<span className="text-[#14b8a6]">.it</span>
             </Link>
-            <p className="text-poll-grey-400 mt-2 max-w-md">
-              Create engaging polls and get real-time insights from your community. 
-              
-            </p>
             <div className="flex items-center gap-2 mt-4 text-poll-grey-400">
               <span>Made with</span>
               <HeartIcon className="w-4 h-4 text-red-500" />

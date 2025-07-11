@@ -105,6 +105,27 @@ const Header: React.FC = () => {
         <Link href="/" className="text-2xl font-bold text-white hover:opacity-90 transition-opacity focus:outline-none focus:opacity-90" aria-label="Go to homepage">
           Poll<span className="text-[#14b8a6]">.it</span>
         </Link>
+        
+        {/* Navigation Links */}
+        <div className="flex items-center gap-6">
+          <Link 
+            href="/" 
+            className={`text-poll-grey-100 hover:text-[#14b8a6] transition-colors font-medium ${
+              router.pathname === '/' ? 'text-[#14b8a6]' : ''
+            }`}
+          >
+            Polls
+          </Link>
+          <Link 
+            href="/trivia" 
+            className={`text-poll-grey-100 hover:text-[#14b8a6] transition-colors font-medium ${
+              router.pathname === '/trivia' ? 'text-[#14b8a6]' : ''
+            }`}
+          >
+            Trivia
+          </Link>
+        </div>
+        
         <div className="flex items-center gap-4">
           
           {/* Login dropdown if not logged in */}
