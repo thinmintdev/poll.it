@@ -1,11 +1,11 @@
 # Poll.it - Real-time Polling Application
 
-A modern, full-stack polling application built with Next.js 14, featuring real-time updates, responsive design, and a sophisticated UI/UX implementation.
+A modern, full-stack polling application built with Next.js 15, featuring real-time updates, responsive design, and a sophisticated UI/UX implementation.
 
 ## 🔧 Technical Stack
 
 ### Frontend
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS with custom design system
 - **Animations**: Framer Motion, GSAP
