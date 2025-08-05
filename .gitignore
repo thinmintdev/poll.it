@@ -24,9 +24,10 @@
 .DS_Store
 *.pem
 CLAUDE.md
-.dev
+/.dev/
+specstory/history/
+.claude
 .specstory
-
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -34,7 +35,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env.local
 
 # vercel
 .vercel
