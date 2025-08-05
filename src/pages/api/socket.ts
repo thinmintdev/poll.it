@@ -7,7 +7,11 @@ export default function SocketHandler(req: NextApiRequest, res: NextApiResponseS
     console.log('Socket is already running')
   } else {
     console.log('Socket is initializing')
-    const io = new Server(res.socket.server)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const io = new Server(res.socket.server as any, {
+      path: '/api/socket',
+      addTrailingSlash: false,
+    })
     res.socket.server.io = io
 
     io.on('connection', (socket) => {

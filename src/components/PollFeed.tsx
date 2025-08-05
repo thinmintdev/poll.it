@@ -68,7 +68,7 @@ export default function PollFeed() {
   // Initial load
   useEffect(() => {
     fetchPolls(1, true)
-  }, [])
+  }, [fetchPolls])
 
   // Infinite scroll observer
   useEffect(() => {
@@ -164,7 +164,7 @@ export default function PollFeed() {
           {/* End of results indicator */}
           {!pagination.hasMore && polls.length > 0 && (
             <div className="text-center py-4">
-              <p className="text-gray-500 text-sm">You've reached the end of the feed</p>
+              <p className="text-gray-500 text-sm">You&apos;ve reached the end of the feed</p>
             </div>
           )}
           

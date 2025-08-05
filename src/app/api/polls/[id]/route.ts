@@ -3,10 +3,10 @@ import { query } from '@/lib/database'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const result = await query('SELECT * FROM polls WHERE id = $1', [id])
     const poll = result.rows[0]

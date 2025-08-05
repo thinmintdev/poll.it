@@ -64,24 +64,24 @@ export default function InfiniteScroll({
 
     divItems.forEach((child, i) => {
       const y = i * totalItemHeight;
-      gsap.set(child, { y });
+      gsap.set(child as gsap.TweenTarget, { y });
     });
 
     const observer = Observer.create({
       target: container,
       type: "wheel,touch,pointer",
       preventDefault: true,
-      onPress: ({ target }: { target: HTMLElement }) => {
-        target.style.cursor = "grabbing";
+      onPress: (self: { target: Element }) => {
+        (self.target as HTMLElement).style.cursor = "grabbing";
       },
-      onRelease: ({ target }: { target: HTMLElement }) => {
-        target.style.cursor = "grab";
+      onRelease: (self: { target: Element }) => {
+        (self.target as HTMLElement).style.cursor = "grab";
       },
       onChange: ({ deltaY, isDragging, event }: { deltaY: number, isDragging: boolean, event: Event }) => {
         const d = event.type === "wheel" ? -deltaY : deltaY;
         const distance = isDragging ? d * 5 : d * 10;
         divItems.forEach((child) => {
-          gsap.to(child, {
+          gsap.to(child as gsap.TweenTarget, {
             duration: 0.5,
             ease: "expo.out",
             y: `+=${distance}`,
@@ -100,7 +100,7 @@ export default function InfiniteScroll({
 
       const tick = () => {
         divItems.forEach((child) => {
-          gsap.set(child, {
+          gsap.set(child as gsap.TweenTarget, {
             y: `+=${speedPerFrame}`,
             modifiers: {
               y: gsap.utils.unitize(wrapFn)

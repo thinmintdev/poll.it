@@ -10,7 +10,7 @@ interface ShareModalProps {
   pollTitle: string
 }
 
-export default function ShareModal({ isOpen, onClose, pollUrl, pollTitle }: ShareModalProps) {
+export default function ShareModal({ isOpen, onClose, pollUrl }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState('share')
   const [copySuccess, setCopySuccess] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -153,7 +153,7 @@ export default function ShareModal({ isOpen, onClose, pollUrl, pollTitle }: Shar
                     Send invite
                   </button>
                 </div>
-                <p className="text-gray-400 text-xs mb-4">We'll email them instructions and a magic link to sign in.</p>
+                <p className="text-gray-400 text-xs mb-4">We&apos;ll email them instructions and a magic link to sign in.</p>
                 
                 {/* Invited Users List */}
                 <div className="space-y-2">

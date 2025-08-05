@@ -9,7 +9,7 @@ const pool = new Pool({
 })
 
 // Database query function
-export async function query(text: string, params?: any[]) {
+export async function query(text: string, params?: unknown[]) {
   const client = await pool.connect()
   try {
     const result = await client.query(text, params)
@@ -26,7 +26,7 @@ export const db = {
       const result = await query(`SELECT ${columns} FROM ${table}`)
       return { data: result.rows, error: null }
     },
-    insert: async (data: any) => {
+    insert: async (data: Record<string, unknown>) => {
       const keys = Object.keys(data)
       const values = Object.values(data)
       const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ')
@@ -38,8 +38,8 @@ export const db = {
       )
       return { data: result.rows[0], error: null }
     },
-    update: async (data: any) => ({
-      eq: async (column: string, value: any) => {
+    update: async (data: Record<string, unknown>) => ({
+      eq: async (column: string, value: unknown) => {
         const keys = Object.keys(data)
         const values = Object.values(data)
         const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ')
@@ -52,8 +52,8 @@ export const db = {
       }
     }),
     delete: () => ({
-      eq: async (column: string, value: any) => {
-        const result = await query(`DELETE FROM ${table} WHERE ${column} = $1`, [value])
+      eq: async (column: string, value: unknown) => {
+        await query(`DELETE FROM ${table} WHERE ${column} = $1`, [value])
         return { data: null, error: null }
       }
     })

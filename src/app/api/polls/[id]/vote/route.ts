@@ -5,10 +5,10 @@ import { VoteData } from '@/types/poll'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: pollId } = params
+    const { id: pollId } = await params
     const body: VoteData = await request.json()
     const { optionIndex } = body
 

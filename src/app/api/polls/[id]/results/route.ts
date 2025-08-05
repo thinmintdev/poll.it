@@ -4,10 +4,10 @@ import { PollResults } from '@/types/poll'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: pollId } = params
+    const { id: pollId } = await params
 
     // Get poll data
     const pollResult = await query('SELECT * FROM polls WHERE id = $1', [pollId])
