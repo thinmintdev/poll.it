@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
         {/* Cotton candy gradient HR */}
         <div className="h-px bg-gradient-to-r from-cotton-candy-pink via-cotton-candy-purple to-cotton-candy-blue mb-8"></div>
 
-        <div className="py-8">
+        <div className="py-6">
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             {/* Logo and Copyright */}
             <div className="flex items-center space-x-4">
