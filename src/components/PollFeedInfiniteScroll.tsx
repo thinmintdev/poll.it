@@ -165,14 +165,14 @@ export default function PollFeedInfiniteScroll() {
         <InfiniteScroll
           items={pollItems}
           width="100%"
-          maxHeight="75%"
-          itemMinHeight={220}
+          maxHeight="100%"
+          itemMinHeight={300}
           isTilted={false}
           autoplay={true}
           autoplaySpeed={0.25}
           autoplayDirection="down"
           pauseOnHover={true}
-          negativeMargin="-19rem"
+          negativeMargin="-27em"
         />
       </div>
     </div>

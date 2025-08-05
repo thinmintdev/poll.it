@@ -114,10 +114,7 @@ export default function CreatePoll() {
               <h1 className="text-3xl font-bold text-gradient-primary">
                 Create a Poll
               </h1>
-              <div className="flex items-center space-x-1 text-cotton-mint text-sm">
-                <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
-                <span className="font-medium">Live</span>
-              </div>
+              
             </div>
             <p className="text-app-secondary text-base mb-8">
               Craft engaging questions and gather real-time insights from your audience
@@ -234,8 +231,8 @@ export default function CreatePoll() {
                         allowMultipleSelections ? 'translate-x-5' : 'translate-x-0.5'
                       } translate-y-0.5`}></div>
                     </div>
-                    <label htmlFor="allowMultiple" className="text-sm text-app-primary font-medium cursor-pointer">
-                      Multiple selections
+                    <label htmlFor="allowMultiple" className="text-sm text-app-muted font-medium cursor-pointer">
+                      Multiple Choice
                     </label>
                   </div>
                   
@@ -256,7 +253,7 @@ export default function CreatePoll() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setMaxSelections(Math.min(options.filter(opt => opt.trim()).length, maxSelections + 1))}
+                        onClick={() => setMaxSelections(Math.min(options.length, maxSelections + 1))}
                         className="w-6 h-6 bg-cotton-purple/20 hover:bg-cotton-purple/30 rounded-full flex items-center justify-center text-cotton-purple transition-colors"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

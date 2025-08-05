@@ -125,7 +125,7 @@ const HomeHeroBars: React.FC = () => {
   }, [drawBars]);
 
   return (
-    <div className="relative h-[600px] w-full overflow-hidden rounded-2xl border border-app/20 glass-card">
+    <div className="relative h-[400px] w-full overflow-hidden rounded-2xl ">
       {/* Background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-cotton-pink/5 via-transparent to-cotton-blue/5"></div>
       
