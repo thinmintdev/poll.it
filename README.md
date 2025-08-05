@@ -213,10 +213,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-**Developer**: [Your Name]  
-**Portfolio**: [Your Portfolio URL]  
-**LinkedIn**: [Your LinkedIn]  
-**Email**: [Your Email]
+**Developer**: Alexander
+**Portfolio**: talaat.dev // thinmint.dev  
+
 
 ---
 
