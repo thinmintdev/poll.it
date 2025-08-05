@@ -70,7 +70,7 @@ export default function PollPageClient({ id }: PollPageClientProps) {
 
     socket.on('connect', () => {
       console.log('Connected to socket server')
-      socket.emit('joinPoll', id)
+      socket.emit('join-poll', id)
     })
 
     socket.on('pollResults', (newResults: Results) => {

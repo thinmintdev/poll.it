@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:init": "node scripts/init-db.js",
+    "db:migrate": "node scripts/migrate-db.js",
     "db:reset": "node scripts/init-db.js",
     "db:test": "node scripts/test-db.js"
   },

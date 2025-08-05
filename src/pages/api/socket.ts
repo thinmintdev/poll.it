@@ -13,6 +13,10 @@ export default function SocketHandler(req: NextApiRequest, res: NextApiResponseS
       addTrailingSlash: false,
     })
     res.socket.server.io = io
+    
+    // Store globally for access from API routes
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(global as any).io = io
 
     io.on('connection', (socket) => {
       console.log('Client connected:', socket.id)

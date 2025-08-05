@@ -129,6 +129,44 @@ export async function POST(
       )
     }
 
+    // Get updated results and broadcast to all clients in the poll room
+    const resultsQuery = await query(`
+      SELECT 
+        option_index,
+        COUNT(*) as votes
+      FROM votes 
+      WHERE poll_id = $1 
+      GROUP BY option_index
+      ORDER BY option_index
+    `, [pollId])
+
+    const totalVotes = resultsQuery.rows.reduce((sum, row) => sum + parseInt(row.votes), 0)
+    const results = options.map((_: string, index: number) => {
+      const voteData = resultsQuery.rows.find(row => row.option_index === index)
+      const votes = voteData ? parseInt(voteData.votes) : 0
+      const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0
+      return { votes, percentage }
+    })
+
+    // Broadcast updated results to all clients in the poll room
+    try {
+      // Access the socket.io instance from the global store
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const io = (global as any).io
+      if (io) {
+        io.to(`poll-${pollId}`).emit('pollResults', {
+          totalVotes,
+          results
+        })
+        console.log(`Broadcasted poll results to poll-${pollId} room`)
+      } else {
+        console.log('Socket.IO instance not found - results will not be broadcast in real-time')
+      }
+    } catch (error) {
+      console.error('Failed to broadcast poll results:', error)
+      // Don't fail the vote if broadcast fails
+    }
+
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {
     console.error('Error recording vote:', error)
