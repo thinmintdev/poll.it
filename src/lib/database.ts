@@ -1,4 +1,4 @@
-import { Pool, PoolClient, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { DATABASE_CONFIG } from '@/constants/config';
 
 /**
@@ -29,8 +29,7 @@ const pool = new Pool({
  * - Type-safe parameter binding to prevent SQL injection
  * - Performance monitoring (query execution time)
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function query<T = any>(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string, 
   params?: unknown[]
 ): Promise<QueryResult<T>> {
