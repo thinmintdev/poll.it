@@ -165,7 +165,7 @@ export default function PollFeedInfiniteScroll() {
         <InfiniteScroll
           items={pollItems}
           width="100%"
-          maxHeight="100%"
+          maxHeight="75%"
           itemMinHeight={220}
           isTilted={false}
           autoplay={true}

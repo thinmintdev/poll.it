@@ -148,8 +148,8 @@ const HomeHeroBars: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
         >
-          Pulse of
-          <br />
+          Pulse of &nbsp;
+          
           <motion.span 
             className="text-gradient-primary inline-block"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -167,7 +167,7 @@ const HomeHeroBars: React.FC = () => {
           transition={{ duration: 0.8, delay: 0.5 }}
         >
           Capture what matters most with <span className="text-cotton-mint font-semibold">real-time polling</span> that&apos;s as beautiful as it is powerful.
-          <br />Ask, engage, decide — <span className="text-cotton-peach font-semibold">instantly</span>.
+          Ask, engage, decide — <span className="text-cotton-peach font-semibold">instantly</span>.
         </motion.p>
         
         <motion.div 
@@ -181,7 +181,7 @@ const HomeHeroBars: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Link href="/create" className="btn-primary group relative overflow-hidden inline-flex">
+            <Link href="#create" className="btn-primary group relative overflow-hidden inline-flex">
               <div className="absolute inset-0 bg-gradient-to-r from-cotton-pink/20 via-cotton-purple/20 to-cotton-blue/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
               <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

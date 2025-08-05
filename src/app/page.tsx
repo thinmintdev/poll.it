@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Main Content - Two Column Layout */}
-      <div className="container mx-auto px-4 py-8">
+      <div id="create" className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <HomeHeroBars />
         </div>
