@@ -109,15 +109,15 @@ export default function CreatePoll() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-cotton-pink to-cotton-purple rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </div>
-              <h1 className="text-3xl font-bold text-app-primary">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-1 h-8 bg-gradient-primary rounded-full"></div>
+              <h1 className="text-3xl font-bold text-gradient-primary">
                 Create a Poll
               </h1>
+              <div className="flex items-center space-x-1 text-cotton-mint text-sm">
+                <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+                <span className="font-medium">Live</span>
+              </div>
             </div>
             <p className="text-app-secondary text-base mb-8">
               Craft engaging questions and gather real-time insights from your audience

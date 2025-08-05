@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const Header: React.FC = () => {
@@ -35,28 +36,29 @@ const Header: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Link href="/" className="flex items-center space-x-3">
+            <Link href="/" className="flex items-center">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="w-6 h-6"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-white">
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </motion.div>
-                </div>
+                <motion.div
+                  whileHover={{ rotate: 5 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-40 h-10"
+                >
+                  <Image 
+                    src="/poll_logo.svg" 
+                    alt="Poll.it Logo" 
+                    width={150}
+                    height={88}
+                    className="w-full h-full"
+                  />
+                </motion.div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-cotton-mint rounded-full animate-pulse"></div>
               </div>
-              <span className="text-xl font-bold text-gradient-primary">POLL.IT</span>
             </Link>
           </motion.div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <NavLink href="/" label="Home" />
+            
             
             
             

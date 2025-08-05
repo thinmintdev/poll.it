@@ -137,16 +137,38 @@ export default function PollPageClient({ id }: PollPageClientProps) {
     }
   }
 
-  const getBarColor = (index: number) => {
+  const getCottonColor = (index: number) => {
     const colors = [
-      '#86efac', // green-300
-      '#fde047', // yellow-300
-      '#f9a8d4', // pink-300
-      '#a5b4fc', // indigo-300
-      '#6ee7b7', // teal-300
-      '#fca5a5', // red-300
-      '#c4b5fd', // violet-300
-      '#93c5fd', // blue-300
+      { 
+        gradient: 'linear-gradient(135deg, #ff6b9d40, #ff6b9d)', 
+        accent: '#ff6b9d',
+        name: 'cotton-pink'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #4facfe40, #4facfe)', 
+        accent: '#4facfe',
+        name: 'cotton-blue'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #9f7aea40, #9f7aea)', 
+        accent: '#9f7aea',
+        name: 'cotton-purple'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #00f5a040, #00f5a0)', 
+        accent: '#00f5a0',
+        name: 'cotton-mint'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #ffa72640, #ffa726)', 
+        accent: '#ffa726',
+        name: 'cotton-peach'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #e879f940, #e879f9)', 
+        accent: '#e879f9',
+        name: 'cotton-lavender'
+      },
     ]
     return colors[index % colors.length]
   }
@@ -198,9 +220,16 @@ export default function PollPageClient({ id }: PollPageClientProps) {
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-app-primary mb-4 leading-tight">
-            {poll?.question}
-          </h1>
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <div className="w-1 h-8 bg-gradient-primary rounded-full"></div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gradient-primary leading-tight">
+              {poll?.question}
+            </h1>
+            <div className="flex items-center space-x-1 text-cotton-mint text-sm">
+              <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+              <span className="font-medium">Live</span>
+            </div>
+          </div>
           <div className="flex items-center justify-center space-x-6 text-app-secondary">
             <div className="flex items-center space-x-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,27 +341,52 @@ export default function PollPageClient({ id }: PollPageClientProps) {
                   {poll?.options.map((option, index) => {
                     const result = results?.results[index]
                     const percent = result?.percentage || 0
+                    const voteCount = result?.votes || 0
                     const isSelected = poll?.allow_multiple_selections 
                       ? selectedOptions.includes(index)
                       : selectedOption === index
+                    const colorTheme = getCottonColor(index)
+                    
                     return (
-                      <div key={index} className={`relative p-4 rounded-xl transition-colors border-2 ${isSelected ? 'border-cotton-purple bg-cotton-purple/10' : 'border-app-surface'}`}>
-                        <div className="flex items-center justify-between z-10 relative">
-                          <div className="flex items-center space-x-4">
-                            <span className="font-semibold text-app-primary">{option}</span>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <span className="text-app-secondary font-bold">{percent.toFixed(1)}%</span>
-                            <span className="text-app-muted text-sm">({result?.votes || 0} votes)</span>
+                      <div key={index} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className={`font-semibold truncate pr-4 text-sm ${isSelected ? 'text-cotton-purple' : 'text-app-primary'}`}>
+                            {option}
+                          </span>
+                          <div className="flex items-center space-x-3 text-sm">
+                            <span 
+                              className="font-bold"
+                              style={{ color: colorTheme.accent }}
+                            >
+                              {voteCount}
+                            </span>
+                            <span className="text-app-muted font-medium">
+                              {percent.toFixed(1)}%
+                            </span>
                           </div>
                         </div>
-                        <div
-                          className="absolute top-0 left-0 h-full rounded-lg transition-all duration-500 ease-out"
-                          style={{ 
-                            width: `${percent}%`,
-                            background: `linear-gradient(to right, ${getBarColor(index)}40, ${getBarColor(index)})`
-                          }}
-                        />
+                        
+                        <div className="relative">
+                          <div className="w-full bg-app-surface rounded-full h-3 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-700 ease-out relative"
+                              style={{ 
+                                width: `${percent}%`,
+                                background: colorTheme.gradient
+                              }}
+                            >
+                              {percent > 0 && (
+                                <div 
+                                  className="absolute inset-0 rounded-full opacity-50"
+                                  style={{
+                                    background: `linear-gradient(90deg, transparent, ${colorTheme.accent}60)`,
+                                    animation: 'shimmer 2s infinite'
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )
                   })}
@@ -424,6 +478,14 @@ export default function PollPageClient({ id }: PollPageClientProps) {
           pollTitle={poll?.question || 'Poll'}
         />
       </div>
+      
+      {/* Shimmer animation styles */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   )
 }

@@ -143,20 +143,20 @@ const HomeHeroBars: React.FC = () => {
       
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-8 text-center">
         <motion.h1 
-          className="text-6xl md:text-7xl font-bold mb-8 leading-tight"
+          className="text-6xl md:text-7xl font-bold mb-8 leading-tight text-app-primary"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
         >
-          Create, Share, and Vote
+          Pulse of
           <br />
           <motion.span 
-            className="bg-gradient-to-r from-cotton-pink via-cotton-purple to-cotton-blue bg-clip-text text-transparent"
+            className="text-gradient-primary inline-block"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
           >
-            Instantly.
+            Opinion
           </motion.span>
         </motion.h1>
         
@@ -166,8 +166,8 @@ const HomeHeroBars: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
         >
-          The most <span className="text-cotton-mint font-semibold">beautiful</span> and <span className="text-cotton-peach font-semibold">intuitive</span> way to create real-time polls.
-          <br />No accounts, no hassle.
+          Capture what matters most with <span className="text-cotton-mint font-semibold">real-time polling</span> that&apos;s as beautiful as it is powerful.
+          <br />Ask, engage, decide — <span className="text-cotton-peach font-semibold">instantly</span>.
         </motion.p>
         
         <motion.div 

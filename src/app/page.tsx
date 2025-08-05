@@ -19,11 +19,8 @@ export default function Home() {
           </div>
 
           {/* Right Column - Feed with Infinite Scroll */}
-          <div id="feed" className="card h-[calc(100vh-510px)] flex flex-col overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-cotton-purple/5 via-transparent to-cotton-mint/5 pointer-events-none"></div>
-            <div className="relative flex-grow overflow-y-auto">
-              <PollFeedInfiniteScroll />
-            </div>
+          <div id="feed" className="h-[calc(100vh-510px)] flex flex-col overflow-hidden relative">
+            <PollFeedInfiniteScroll />
           </div>
         </div>
       </div>

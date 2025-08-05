@@ -59,84 +59,150 @@ export default function PollCard({ poll }: PollCardProps) {
     }
   }
 
-  const getBarColor = (index: number) => {
+  const getCottonColor = (index: number) => {
     const colors = [
-      '#86efac', // green-300
-      '#fde047', // yellow-300
-      '#f9a8d4', // pink-300
-      '#a5b4fc', // indigo-300
-      '#6ee7b7', // teal-300
-      '#fca5a5', // red-300
-      '#c4b5fd', // violet-300
-      '#93c5fd', // blue-300
+      { 
+        gradient: 'linear-gradient(135deg, #ff6b9d40, #ff6b9d)', 
+        accent: '#ff6b9d',
+        name: 'cotton-pink'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #4facfe40, #4facfe)', 
+        accent: '#4facfe',
+        name: 'cotton-blue'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #9f7aea40, #9f7aea)', 
+        accent: '#9f7aea',
+        name: 'cotton-purple'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #00f5a040, #00f5a0)', 
+        accent: '#00f5a0',
+        name: 'cotton-mint'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #ffa72640, #ffa726)', 
+        accent: '#ffa726',
+        name: 'cotton-peach'
+      },
+      { 
+        gradient: 'linear-gradient(135deg, #e879f940, #e879f9)', 
+        accent: '#e879f9',
+        name: 'cotton-lavender'
+      },
     ]
     return colors[index % colors.length]
   }
 
   return (
-    <div className="card group w-full relative z-10">
+    <div className="card group w-full relative z-10 hover-glow cursor-pointer transition-all duration-300">
+      {/* Gradient Border Accent */}
+      <div className="absolute -inset-0.5 bg-gradient-primary rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-sm"></div>
+      
       {/* Poll Header */}
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-2 text-app-primary group-hover:text-white transition-colors duration-200">
+      <div className="mb-6 relative z-10">
+        <h3 className="text-xl font-bold mb-3 text-app-primary group-hover:text-gradient-primary transition-all duration-300 leading-tight">
           {poll.question}
         </h3>
-        <div className="flex items-center justify-between text-sm text-app-secondary">
-          <span>{totalVotes} votes</span>
-          <span>{formatDate(poll.created_at)}</span>
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 text-cotton-mint">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span className="font-semibold">{totalVotes}</span>
+              <span className="text-app-muted">vote{totalVotes !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="w-1 h-1 bg-app-muted rounded-full"></div>
+            <span className="text-app-muted">{formatDate(poll.created_at)}</span>
+          </div>
         </div>
       </div>
 
-      {/* Horizontal Bar Chart */}
-      <div className="space-y-3 mb-4">
+      {/* Enhanced Bar Chart */}
+      <div className="space-y-4 mb-6">
         {options.map((option, index) => {
           const voteCount = voteCounts[index] || 0
           const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0
+          const colorTheme = getCottonColor(index)
           
           return (
-            <div key={index} className="space-y-1">
-              <div className="flex justify-between items-center text-sm">
-                <span className="font-medium truncate pr-2 text-app-primary">
+            <div key={index} className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-app-primary truncate pr-4 text-sm">
                   {option}
                 </span>
-                <div className="flex items-center space-x-2 text-app-secondary">
-                  <span className="font-bold">{voteCount}</span>
-                  <span className="text-xs">({percentage.toFixed(1)}%)</span>
+                <div className="flex items-center space-x-3 text-sm">
+                  <span 
+                    className="font-bold"
+                    style={{ color: colorTheme.accent }}
+                  >
+                    {voteCount}
+                  </span>
+                  <span className="text-app-muted font-medium">
+                    {percentage.toFixed(1)}%
+                  </span>
                 </div>
               </div>
               
-              <div className="w-full bg-app-surface rounded-full h-2">
-                <div
-                  className="h-2 rounded-full transition-all duration-500 ease-out"
-                  style={{ 
-                    width: `${percentage}%`,
-                    background: `linear-gradient(to right, ${getBarColor(index)}40, ${getBarColor(index)})`
-                  }}
-                />
+              <div className="relative">
+                <div className="w-full bg-app-surface rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 ease-out relative"
+                    style={{ 
+                      width: `${percentage}%`,
+                      background: colorTheme.gradient
+                    }}
+                  >
+                    {percentage > 0 && (
+                      <div 
+                        className="absolute inset-0 rounded-full opacity-50"
+                        style={{
+                          background: `linear-gradient(90deg, transparent, ${colorTheme.accent}60)`,
+                          animation: 'shimmer 2s infinite'
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-between items-center pt-4 mt-4 border-t border-app-surface">
+      {/* Enhanced Action Buttons */}
+      <div className="flex items-center justify-between pt-6 mt-6 border-t border-app-surface relative z-10">
         <Link
           href={`/poll/${poll.id}`}
-          className="font-medium text-sm flex items-center space-x-1 text-app-secondary hover:text-white transition-colors duration-200"
+          className="flex items-center space-x-2 text-app-muted hover:text-cotton-blue transition-all duration-200 group-hover:translate-x-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
-          <span>View Details</span>
+          <span className="font-medium text-sm">View Details</span>
         </Link>
         
         <Link
           href={`/poll/${poll.id}`}
-          className="btn-secondary text-xs"
+          className="btn-gradient-border-sm hover:scale-105 transition-transform duration-200"
         >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+          </svg>
           Vote Now
         </Link>
       </div>
+      
+      {/* Shimmer animation styles */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   )
 }

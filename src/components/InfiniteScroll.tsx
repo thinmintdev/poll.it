@@ -152,18 +152,18 @@ export default function InfiniteScroll({
 
   return (
     <div className="relative infinite-scroll-wrapper" ref={wrapperRef} style={{ maxHeight }}>
-      <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-app-card to-transparent z-10 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-app-card to-transparent z-10 pointer-events-none" />
+      <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-app-bg to-transparent z-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-app-bg to-transparent z-10 pointer-events-none" />
       <style>
         {`
         .infinite-scroll-container {
           width: ${width};
-          padding: 6rem 0;
+          padding: 3rem 0;
         }
 
         .infinite-scroll-item {
           min-height: ${itemMinHeight}px;
-          margin-bottom: -18.8rem;
+          margin-bottom: ${negativeMargin};
         }
         `}
       </style>
