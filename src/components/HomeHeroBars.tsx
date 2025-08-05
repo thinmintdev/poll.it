@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import RotatingText from './RotatingText';
 
 interface BarData {
   id: number;
@@ -125,7 +126,7 @@ const HomeHeroBars: React.FC = () => {
   }, [drawBars]);
 
   return (
-    <div className="relative h-[400px] w-full overflow-hidden rounded-2xl ">
+    <div className="relative h-[300px] sm:h-[350px] md:h-[400px] w-full overflow-hidden rounded-2xl">
       {/* Background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-cotton-pink/5 via-transparent to-cotton-blue/5"></div>
       
@@ -141,37 +142,69 @@ const HomeHeroBars: React.FC = () => {
         className="absolute inset-0 w-full h-full opacity-40"
       />
       
-      <div className="relative z-10 flex flex-col items-center justify-center h-full px-8 text-center">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 md:px-8 text-center">
         <motion.h1 
-          className="text-6xl md:text-7xl font-bold mb-8 leading-tight text-app-primary"
+          className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight text-app-primary"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
         >
-          Pulse of &nbsp;
-          
-          <motion.span 
-            className="text-gradient-primary inline-block"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-          >
-            Opinion
-          </motion.span>
+          <span className="text-app-primary uppercase text-3xl"></span>
+          <span className="relative inline-block">
+            <RotatingText
+              texts={[
+                "Vibe Checks",
+                "Peanut Galleries",
+                "Reality Checks", 
+                "Gut Checks",
+                "Sanity Polls",
+                "Truth Serums",
+                "Hot Takes",
+                "Brain Dumps",
+                "Crowd Wisdom",
+                "Hive Minds",
+                "Tea Spills",
+                "Receipts",
+                "Call Outs",
+                "Fact Checks",
+                "Roast Sessions",
+                "Drag Races",
+                "Spill Sessions",
+                "Group Therapy",
+                "Democracy Checks",
+                "Mob Justice",
+                "Public Trials",
+                "Jury Duty",
+                "Verdict Time",
+                "Court Cases",
+                "Snap Judgments"
+              ]}
+              rotationInterval={3000}
+              splitBy="characters"
+              mainClassName="inline-block px-4 py-2 bg-gradient-to-r from-[#ff6b9d] via-[#9f7aea] to-[#4facfe] text-white rounded-xl font-bold"
+              elementLevelClassName="inline-block"
+              splitLevelClassName="inline-block overflow-hidden"
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "-100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              staggerDuration={0.02}
+              staggerFrom="first"
+            />
+          </span>
         </motion.h1>
         
         <motion.p 
-          className="text-xl md:text-2xl text-app-secondary mb-12 max-w-3xl mx-auto leading-relaxed"
+          className="text-sm sm:text-base md:text-xl lg:text-2xl text-app-secondary mb-6 sm:mb-8 md:mb-12 max-w-xs sm:max-w-md md:max-w-3xl mx-auto leading-relaxed"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
         >
-          Capture what matters most with <span className="text-cotton-mint font-semibold">real-time polling</span> that&apos;s as beautiful as it is powerful.
-          Ask, engage, decide — <span className="text-cotton-peach font-semibold">instantly</span>.
+          Get the real <span className="text-cotton-pink font-semibold">temp</span> of the chat.<br /> Polling so smooth, decisions happen in <span className="text-cotton-peach font-semibold">real-time</span>.
         </motion.p>
         
         <motion.div 
-          className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center items-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.7 }}

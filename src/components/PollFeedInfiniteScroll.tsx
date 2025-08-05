@@ -33,6 +33,7 @@ export default function PollFeedInfiniteScroll() {
   const [polls, setPolls] = useState<PollData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isCollapsed, setIsCollapsed] = useState(true) // Collapsed by default on mobile
 
   const fetchPolls = async () => {
     try {
@@ -134,7 +135,10 @@ export default function PollFeedInfiniteScroll() {
     <div className="flex flex-col h-full">
       {/* Enhanced Header with Gradient Text */}
       <div className="flex justify-between items-center mb-6 flex-shrink-0 px-2">
-        <div className="flex items-center space-x-3">
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="flex items-center space-x-3 lg:cursor-default"
+        >
           <div className="w-1 h-8 bg-gradient-primary rounded-full"></div>
           <h2 className="text-3xl font-bold text-gradient-primary">
             Recent Polls
@@ -143,7 +147,18 @@ export default function PollFeedInfiniteScroll() {
             <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
             <span className="font-medium">Live</span>
           </div>
-        </div>
+          {/* Mobile toggle icon */}
+          <div className="lg:hidden ml-2">
+            <svg 
+              className={`w-5 h-5 text-app-muted transition-transform duration-300 ${isCollapsed ? 'rotate-0' : 'rotate-180'}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </button>
         <button
           onClick={refreshFeed}
           className="group relative p-3 rounded-xl glass-card hover:border-cotton-blue transition-all duration-300 hover:scale-105"
@@ -157,7 +172,7 @@ export default function PollFeedInfiniteScroll() {
       </div>
 
       {/* Clean Infinite Scroll Container */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className={`flex-1 overflow-hidden relative transition-all duration-300 ${isCollapsed ? 'lg:block hidden' : 'block'}`}>
         {/* Refined Gradient Masks */}
         <div className="absolute top-0 left-0 w-full h-16 bg-gradient-to-b from-app-bg via-app-bg/80 to-transparent z-20 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-app-bg via-app-bg/80 to-transparent z-20 pointer-events-none"></div>
