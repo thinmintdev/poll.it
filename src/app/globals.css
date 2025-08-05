@@ -1,26 +1,262 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Cotton Candy on Dark - Premium Color Palette */
+  --bg-primary: #0a0a0f;           /* Deep dark background */
+  --bg-secondary: #16161b;         /* Dark container background */
+  --bg-tertiary: #1e1e2e;          /* Surface background */
+  --bg-card: #252539;              /* Card backgrounds */
+  
+  --surface: #2d2d44;              /* Medium surface */
+  --surface-light: #3a3a52;        /* Lighter surface */
+  --surface-hover: #44445a;        /* Hover surface */
+  
+  --text-primary: #ffffff;         /* Pure white text */
+  --text-secondary: #e2e8f0;       /* Light gray text */
+  --text-muted: #94a3b8;           /* Muted text */
+  --text-faded: #64748b;           /* Faded text */
+  
+  /* Cotton Candy Gradients & Accents */
+  --cotton-candy-pink: #ff6b9d;    /* Bright pink */
+  --cotton-candy-blue: #4facfe;    /* Bright blue */
+  --cotton-candy-purple: #9f7aea;  /* Purple */
+  --cotton-candy-mint: #00f5a0;    /* Mint green */
+  --cotton-candy-peach: #ffa726;   /* Peach */
+  --cotton-candy-lavender: #e879f9; /* Lavender */
+  
+  /* Gradient Combinations */
+  --gradient-primary: linear-gradient(135deg, #ff6b9d 0%, #4facfe 100%);
+  --gradient-secondary: linear-gradient(135deg, #9f7aea 0%, #e879f9 100%);
+  --gradient-tertiary: linear-gradient(135deg, #00f5a0 0%, #4facfe 100%);
+  --gradient-warm: linear-gradient(135deg, #ffa726 0%, #ff6b9d 100%);
+  
+  /* Border and accent colors */
+  --border: #2d2d44;
+  --border-light: #3a3a52;
+  --accent-glow: rgba(255, 107, 157, 0.15);
+  
+  /* Glass morphism effects */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  
+  /* Legacy variables for compatibility */
+  --background: #0a0a0f;
+  --foreground: #ffffff;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Custom Tailwind classes */
+@layer utilities {
+  /* Background utilities */
+  .bg-app-primary { background-color: var(--bg-primary); }
+  .bg-app-secondary { background-color: var(--bg-secondary); }
+  .bg-app-tertiary { background-color: var(--bg-tertiary); }
+  .bg-app-card { background-color: var(--bg-card); }
+  .bg-app-surface { background-color: var(--surface); }
+  .bg-app-surface-light { background-color: var(--surface-light); }
+  .bg-app-surface-hover { background-color: var(--surface-hover); }
+  
+  /* Text utilities */
+  .text-app-primary { color: var(--text-primary); }
+  .text-app-secondary { color: var(--text-secondary); }
+  .text-app-muted { color: var(--text-muted); }
+  .text-app-faded { color: var(--text-faded); }
+  
+  /* Cotton candy accent colors */
+  .text-cotton-pink { color: var(--cotton-candy-pink); }
+  .text-cotton-blue { color: var(--cotton-candy-blue); }
+  .text-cotton-purple { color: var(--cotton-candy-purple); }
+  .text-cotton-mint { color: var(--cotton-candy-mint); }
+  .text-cotton-peach { color: var(--cotton-candy-peach); }
+  .text-cotton-lavender { color: var(--cotton-candy-lavender); }
+  
+  .bg-cotton-pink { background-color: var(--cotton-candy-pink); }
+  .bg-cotton-blue { background-color: var(--cotton-candy-blue); }
+  .bg-cotton-purple { background-color: var(--cotton-candy-purple); }
+  .bg-cotton-mint { background-color: var(--cotton-candy-mint); }
+  
+  /* Gradient backgrounds */
+  .bg-gradient-primary { background: var(--gradient-primary); }
+  .bg-gradient-secondary { background: var(--gradient-secondary); }
+  .bg-gradient-tertiary { background: var(--gradient-tertiary); }
+  .bg-gradient-warm { background: var(--gradient-warm); }
+  
+  /* Glass morphism effects */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  /* Glow effects */
+  .glow-pink {
+    box-shadow: 0 0 20px rgba(255, 107, 157, 0.3), 0 0 40px rgba(255, 107, 157, 0.1);
+  }
+  
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(79, 172, 254, 0.3), 0 0 40px rgba(79, 172, 254, 0.1);
+  }
+  
+  /* Border utilities */
+  .border-app { border-color: var(--border); }
+  .border-app-light { border-color: var(--border-light); }
+  
+  /* Hover effects */
+  .hover-glow:hover {
+    box-shadow: 0 0 25px var(--accent-glow);
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+  }
+  
+  /* Text gradients */
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .text-gradient-secondary {
+    background: var(--gradient-secondary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Component styles */
+  .card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 1.5rem;
+    padding: 2rem;
+  }
+  
+  .input-field {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+  }
+  
+  .input-field:focus {
+    outline: none;
+    border-color: var(--cotton-candy-blue);
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+  }
+  
+  .input-field::placeholder {
+    color: var(--text-muted);
+  }
+  
+  .btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    padding: 0.875rem 2rem;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255, 107, 157, 0.3);
+  }
+  
+  .btn-secondary {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    font-weight: 600;
+    padding: 0.875rem 2rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+  }
+  
+  .btn-secondary:hover {
+    background: var(--surface-light);
+    border-color: var(--cotton-candy-blue);
+    transform: translateY(-2px);
+  }
+  
+  .btn-clear {
+    background: linear-gradient(#141420, #141420) padding-box,
+                linear-gradient(to right, var(--cotton-pink), var(--cotton-purple), var(--cotton-blue)) border-box;
+    border: 2px solid transparent;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+
+.btn-gradient-border {
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+  background: linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+              linear-gradient(to right, var(--cotton-candy-pink), var(--cotton-candy-purple), var(--cotton-candy-blue)) border-box;
+  color: var(--cotton-candy-purple);
+  padding: 0.875rem 2rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.btn-gradient-border-sm {
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+  background: linear-gradient(var(--bg-secondary), var(--bg-secondary)) padding-box,
+              linear-gradient(to right, var(--cotton-candy-pink), var(--cotton-candy-purple), var(--cotton-candy-blue)) border-box;
+  color: var(--cotton-candy-purple);
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-gradient-border:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(159, 122, 234, 0.2);
+}
+
+.btn-clear:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(247, 205, 224, 0.1);
+}
+
+.gradient-circle {
+    background: var(--gradient-primary);
+    border-radius: 50%;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif;
 }
