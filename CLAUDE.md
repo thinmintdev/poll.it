@@ -12,7 +12,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Database Management**:
 - `npm run db:init` - Initialize/reset database with schema
+- `npm run db:migrate` - Run database migrations
+- `npm run db:reset` - Reset database (alias for db:init)
 - `npm run db:test` - Test database connection
+
+**Load Testing**:
+- `npm run load-test:quick` - Quick 20-second verification test
+- `npm run load-test:standard` - Full 5-minute load test with realistic scenarios
+- `npm run load-test:spike` - 10-second spike test with 200 users/second
+- `npm run load-test:endurance` - 10-minute endurance test for memory leaks
+- `npm run load-test:report` - Generate HTML report from test results
 
 ## Architecture Overview
 
@@ -53,8 +62,13 @@ This is a real-time polling application built with Next.js 15 (App Router), Type
 - `PollChart.tsx` - Chart.js doughnut visualization with 10-color palette
 - `QRCodeDisplay.tsx` - QR code generation for mobile sharing
 - `PollFeed.tsx` & `PollFeedInfiniteScroll.tsx` - Infinite scroll poll listing
+- `ShareModal.tsx` - Social sharing with Twitter, Facebook, LinkedIn, and copy-to-clipboard
+- `GoogleAnalytics.tsx` - Google Analytics 4 integration for tracking
+- `RotatingText.tsx` - Animated text component using GSAP
 
 **State Management**: React hooks with Socket.IO for real-time synchronization. No external state management library - uses local component state with WebSocket updates.
+
+**Analytics Integration**: Google Analytics 4 and Vercel Analytics for tracking poll creation, voting, and sharing actions via custom `useAnalytics` hook.
 
 **Responsive Design**: Mobile-first TailwindCSS implementation with responsive charts and optimized touch interactions.
 
@@ -82,10 +96,12 @@ This is a real-time polling application built with Next.js 15 (App Router), Type
 ## Environment Setup
 
 **Required Environment Variables**:
+
 ```
-DATABASE_URL=postgresql://...        # NEON database connection
-NEXT_PUBLIC_SUPABASE_URL=https://... # Supabase URL (optional)
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...    # Supabase key (optional)
+DATABASE_URL=postgresql://...            # NEON database connection
+NEXT_PUBLIC_SUPABASE_URL=https://...     # Supabase URL (optional)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...        # Supabase key (optional)
+NEXT_PUBLIC_GA_TRACKING_ID=G-...         # Google Analytics 4 tracking ID (optional)
 ```
 
 **Database Schema**: Run `supabase-schema.sql` to initialize the database with proper tables, indexes, and triggers.
@@ -95,16 +111,31 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...    # Supabase key (optional)
 - **Voting Limits**: One vote per IP address per poll (enforced at database level)
 - **Poll Options**: 2-10 options per poll, 100 characters max per option
 - **Question Length**: 500 characters maximum
+- **Multiple Selections**: Polls support single or multiple selection mode with configurable max selections
 - **Real-time Updates**: 5-second polling fallback if Socket.IO fails
 
 ## Testing Approach
 
 **Database Testing**: Use `scripts/test-db.js` to verify database connectivity and schema.
 
+**Backup & Restore**: Use `scripts/backup-and-reset-db.js` to create timestamped JSON backups before resetting with sample data. Restore with `scripts/restore-backup.js`.
+
 **Sample Data**: `scripts/create-sample-polls.js` for development data.
+
+**Load Testing**: Comprehensive Artillery.js setup in `scripts/load-test/` with multiple test scenarios. Use `npm run load-test:quick` to verify setup before full testing.
 
 **Manual Testing**: Focus on real-time updates, vote deduplication, and mobile responsiveness.
 
-## Design Updates
+## Recent Updates
 
-- The new color scheme is "cotton-candy" the colors are in the global.css
+**Analytics & Tracking**: Integrated Google Analytics 4 and Vercel Analytics with custom event tracking for poll creation, voting, and sharing actions.
+
+**Social Sharing**: Enhanced ShareModal with Twitter, Facebook, LinkedIn integration and improved copy-to-clipboard functionality.
+
+**Multiple Selection Polls**: Added support for polls with multiple answer selections with configurable maximum selections.
+
+**Load Testing Infrastructure**: Comprehensive Artillery.js setup with multiple test scenarios (quick, standard, spike, endurance) for performance validation.
+
+**Backup & Restore**: Database backup functionality with timestamped JSON exports and restore capabilities.
+
+**Design System**: Updated to "cotton-candy" color scheme defined in `global.css` with improved visual consistency.

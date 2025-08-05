@@ -10,7 +10,13 @@
     "db:init": "node scripts/init-db.js",
     "db:migrate": "node scripts/migrate-db.js",
     "db:reset": "node scripts/init-db.js",
-    "db:test": "node scripts/test-db.js"
+    "db:test": "node scripts/test-db.js",
+    "load-test": "./run-load-tests.sh",
+    "load-test:quick": "npx artillery run artillery-quick-test.yml",
+    "load-test:standard": "npx artillery run artillery-config.yml",
+    "load-test:spike": "npx artillery run artillery-spike-test.yml",
+    "load-test:endurance": "npx artillery run artillery-endurance-test.yml",
+    "load-test:report": "npx artillery report"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
@@ -41,6 +47,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "artillery": "^2.0.23",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
     "tailwindcss": "^4",
