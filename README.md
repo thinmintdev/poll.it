@@ -175,6 +175,25 @@ docker run -p 3000:3000 poll-it
 
 ## 📊 Metrics & Analytics
 
+### Google Analytics Integration
+- **Event Tracking**: Automatic tracking of poll creation, voting, and sharing actions
+- **Page Views**: Tracks user navigation and engagement
+- **Custom Events**: Poll-specific analytics for insights into user behavior
+- **Environment Support**: Configurable via `NEXT_PUBLIC_GA_TRACKING_ID` environment variable
+
+### Analytics Events Tracked:
+- **Poll Creation**: `create_poll` - tracks when users create new polls
+- **Voting**: `vote` - tracks poll participation with poll ID
+- **Sharing**: `share` - tracks when users share polls (copy link, etc.)
+
+### Setup:
+1. Set your Google Analytics tracking ID in `.env.local`:
+   ```
+   NEXT_PUBLIC_GA_TRACKING_ID=G-XXXXXXXXXX
+   ```
+2. Analytics will automatically be enabled and start tracking user interactions
+
+### Additional Metrics:
 - Real-time user engagement tracking
 - Poll participation analytics
 - Performance monitoring with Core Web Vitals

@@ -4,6 +4,7 @@ import PollChart from '@/components/PollChart'
 import ShareModal from '@/components/ShareModal'
 import { Poll } from '@/types/poll'
 import { useEffect, useState } from 'react'
+import { useAnalytics } from '@/hooks/useAnalytics'
 import io from 'socket.io-client'
 
 interface Result {
@@ -31,6 +32,7 @@ export default function PollPageClient({ id }: PollPageClientProps) {
   const [hasVoted, setHasVoted] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [chartType, setChartType] = useState<'doughnut' | 'bar'>('doughnut')
+  const { trackVote, trackShare } = useAnalytics()
 
   useEffect(() => {
     const fetchPollAndResults = async () => {
@@ -106,6 +108,10 @@ export default function PollPageClient({ id }: PollPageClientProps) {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to vote')
       }
+      
+      // Track vote for analytics
+      trackVote(id)
+      
       setHasVoted(true)
     } catch (err) {
       if (err instanceof Error) {
@@ -476,6 +482,8 @@ export default function PollPageClient({ id }: PollPageClientProps) {
           onClose={() => setShowShareModal(false)}
           pollUrl={currentUrl}
           pollTitle={poll?.question || 'Poll'}
+          pollId={id}
+          onShare={trackShare}
         />
       </div>
       

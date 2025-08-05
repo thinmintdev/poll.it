@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CreatePollData } from '@/types/poll'
+import { useAnalytics } from '@/hooks/useAnalytics'
 
 export default function CreatePoll() {
   const [question, setQuestion] = useState('')
@@ -22,6 +23,7 @@ export default function CreatePoll() {
     showAdvancedSettings: false
   })
   const router = useRouter()
+  const { trackPollCreation } = useAnalytics()
 
   const addOption = () => {
     if (options.length < 10) {
@@ -82,6 +84,10 @@ export default function CreatePoll() {
       }
 
       const { pollId } = await response.json()
+      
+      // Track poll creation for analytics
+      trackPollCreation(allowMultipleSelections ? 'multiple_choice' : 'single_choice')
+      
       router.push(`/poll/${pollId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')

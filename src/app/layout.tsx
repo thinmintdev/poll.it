@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 import "./globals.css";
 
 const poppins = Poppins({
@@ -26,11 +27,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaTrackingId = process.env.NEXT_PUBLIC_GA_TRACKING_ID;
+
   return (
     <html lang="en">
       <body
         className={`${poppins.variable} antialiased bg-app-primary text-app-primary min-h-screen flex flex-col font-poppins`}
       >
+        {/* Google Analytics */}
+        {gaTrackingId && <GoogleAnalytics trackingId={gaTrackingId} />}
+        
         {/* Background decorative elements */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           {/* Gradient orbs */}

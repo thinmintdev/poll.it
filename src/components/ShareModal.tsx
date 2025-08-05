@@ -8,9 +8,11 @@ interface ShareModalProps {
   onClose: () => void
   pollUrl: string
   pollTitle: string
+  pollId?: string
+  onShare?: (method: string) => void
 }
 
-export default function ShareModal({ isOpen, onClose, pollUrl }: ShareModalProps) {
+export default function ShareModal({ isOpen, onClose, pollUrl, pollId, onShare }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState('share')
   const [copySuccess, setCopySuccess] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -25,6 +27,11 @@ export default function ShareModal({ isOpen, onClose, pollUrl }: ShareModalProps
       await navigator.clipboard.writeText(pollUrl)
       setCopySuccess(true)
       setTimeout(() => setCopySuccess(false), 2000)
+      
+      // Track share action
+      if (onShare && pollId) {
+        onShare('copy_link')
+      }
     } catch (err) {
       console.error('Failed to copy:', err)
     }
