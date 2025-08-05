@@ -259,9 +259,25 @@ export default function PollPageClient({ id }: PollPageClientProps) {
                 <h2 className="text-app-primary text-xl font-bold">{hasVoted ? 'Results' : 'Cast Your Vote'}</h2>
                 <p className="text-app-muted text-sm">by a guest • {hasVoted ? 'just now' : '4 minutes ago'}</p>
               </div>
-              <button className="text-app-muted hover:text-app-primary transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              <button 
+                onClick={() => setShowShareModal(true)}
+                className="relative p-2 rounded-lg transition-all duration-300 group"
+                style={{
+                  background: 'linear-gradient(135deg, #ff6b9d40, #4facfe40)',
+                  border: '1px solid transparent',
+                  backgroundClip: 'padding-box'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 10px 25px rgba(255, 107, 157, 0.3)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                <svg className="w-5 h-5 text-app-primary group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
               </button>
             </div>
@@ -483,7 +499,7 @@ export default function PollPageClient({ id }: PollPageClientProps) {
           pollUrl={currentUrl}
           pollTitle={poll?.question || 'Poll'}
           pollId={id}
-          onShare={trackShare}
+          onShare={(method) => trackShare(method, id)}
         />
       </div>
       
