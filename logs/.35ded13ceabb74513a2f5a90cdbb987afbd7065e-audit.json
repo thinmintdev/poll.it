@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/io/project/poll.it/logs/.35ded13ceabb74513a2f5a90cdbb987afbd7065e-audit.json",
+    "files": [
+        {
+            "date": 1757702629483,
+            "name": "/home/io/project/poll.it/logs/mcp-puppeteer-2025-09-12.log",
+            "hash": "1dba84622096e0977b93da23b8875b1e9cc4a45f0ec5edbc390853c6671483f9"
+        }
+    ],
+    "hashType": "sha256"
+}

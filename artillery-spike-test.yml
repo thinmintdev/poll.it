@@ -1,0 +1,26 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Quick spike test - sudden high load
+    - duration: 10
+      arrivalRate: 200
+      name: "Spike test"
+  payload:
+    path: "./scripts/poll-ids.csv"
+    fields:
+      - "pollId"
+
+scenarios:
+  - name: "Heavy voting load"
+    weight: 100
+    flow:
+      - post:
+          url: "/api/polls/{{ pollId }}/vote"
+          headers:
+            Content-Type: "application/json"
+            X-Forwarded-For: "{{ $randomIP() }}"
+          json:
+            selectedOptions: ["{{ $randomInt(0, 4) }}"]
+            voterIdentifier: "spike-test-{{ $uuid() }}"
+
+processor: "./scripts/artillery-processor.js"

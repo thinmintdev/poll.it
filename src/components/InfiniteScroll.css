@@ -52,5 +52,5 @@
   box-sizing: border-box;
   position: relative;
   background: transparent;
-  margin-bottom: -14rem; /* Remove default margin, use negativeMargin prop instead */
+  margin-bottom: 0px; /* Remove default margin, use negativeMargin prop instead */
 }

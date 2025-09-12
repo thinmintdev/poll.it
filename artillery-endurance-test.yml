@@ -1,0 +1,46 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Endurance test - sustained load over longer period
+    - duration: 600  # 10 minutes
+      arrivalRate: 20
+      name: "Endurance test"
+  payload:
+    path: "./scripts/poll-ids.csv"
+    fields:
+      - "pollId"
+
+scenarios:
+  - name: "Sustained polling activity"
+    weight: 60
+    flow:
+      - get:
+          url: "/poll/{{ pollId }}"
+      - think: "{{ $randomInt(5, 15) }}"
+      - post:
+          url: "/api/polls/{{ pollId }}/vote"
+          headers:
+            Content-Type: "application/json"
+          json:
+            selectedOptions: ["{{ $randomInt(0, 4) }}"]
+            voterIdentifier: "endurance-{{ $uuid() }}"
+      - get:
+          url: "/api/polls/{{ pollId }}/results"
+
+  - name: "Poll creation during endurance"
+    weight: 40
+    flow:
+      - get:
+          url: "/create"
+      - think: "{{ $randomInt(15, 45) }}"
+      - post:
+          url: "/api/polls"
+          headers:
+            Content-Type: "application/json"
+          json:
+            question: "Endurance test poll {{ $randomString() }}"
+            options: ["Yes", "No", "Maybe", "Not sure"]
+            allowMultipleSelections: false
+            maxSelections: 1
+
+processor: "./scripts/artillery-processor.js"

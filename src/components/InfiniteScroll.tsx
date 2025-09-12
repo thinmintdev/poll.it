@@ -22,9 +22,9 @@ interface InfiniteScrollProps {
 export default function InfiniteScroll({
   width = "100%",
   maxHeight = "90%",
-  negativeMargin = "0.5rem",
+  negativeMargin = "-3.5rem",
   items,
-  itemMinHeight = 150,
+  itemMinHeight = 200,
   isTilted = false,
   tiltDirection = "left",
   autoplay = false,

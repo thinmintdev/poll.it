@@ -1,0 +1,27 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 20
+      arrivalRate: 5
+      name: "Quick test"
+  payload:
+    path: "./scripts/poll-ids.csv"
+    fields:
+      - "pollId"
+
+scenarios:
+  - name: "Quick voting test"
+    weight: 100
+    flow:
+      - get:
+          url: "/poll/{{ pollId }}"
+      - think: 1
+      - post:
+          url: "/api/polls/{{ pollId }}/vote"
+          headers:
+            Content-Type: "application/json"
+          json:
+            selectedOptions: [0]
+            voterIdentifier: "quick-test-{{ $uuid() }}"
+
+processor: "./scripts/artillery-processor.js"

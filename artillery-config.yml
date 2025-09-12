@@ -1,0 +1,135 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm up phase - gradual ramp up
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    # Ramp up phase - increasing load
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp up load"
+    # Sustained load phase - peak traffic
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained high load"
+    # Spike test - sudden traffic burst
+    - duration: 30
+      arrivalRate: 100
+      name: "Traffic spike"
+    # Cool down phase
+    - duration: 30
+      arrivalRate: 10
+      name: "Cool down"
+  payload:
+    path: "./scripts/poll-ids.csv"
+    fields:
+      - "pollId"
+  defaults:
+    headers:
+      User-Agent: "Artillery-LoadTest/1.0"
+      Accept: "application/json"
+
+scenarios:
+  # Main voting scenario - 70% of traffic
+  - name: "Vote on existing polls"
+    weight: 70
+    flow:
+      # Browse to poll page first (realistic user behavior)
+      - get:
+          url: "/poll/{{ pollId }}"
+          capture:
+            - header: "set-cookie"
+              as: "sessionCookie"
+      
+      # Think time - user reads the poll
+      - think: "{{ $randomInt(2, 8) }}"
+      
+      # Submit vote with random option
+      - post:
+          url: "/api/polls/{{ pollId }}/vote"
+          headers:
+            Content-Type: "application/json"
+            Cookie: "{{ sessionCookie }}"
+          json:
+            selectedOptions: ["{{ $randomInt(0, 4) }}"]
+            voterIdentifier: "load-test-{{ $uuid() }}"
+          capture:
+            - json: "$.success"
+              as: "voteSuccess"
+      
+      # Optional: Check results after voting
+      - get:
+          url: "/api/polls/{{ pollId }}/results"
+          ifTrue: "{{ voteSuccess }}"
+
+  # Poll creation scenario - 15% of traffic  
+  - name: "Create new polls"
+    weight: 15
+    flow:
+      # Visit create page
+      - get:
+          url: "/create"
+      
+      # Think time - user fills out form
+      - think: "{{ $randomInt(10, 30) }}"
+      
+      # Create poll with random data
+      - post:
+          url: "/api/polls"
+          headers:
+            Content-Type: "application/json"
+          json:
+            question: "Load test poll: {{ $randomString() }} - What do you prefer?"
+            options: 
+              - "Option A - {{ $randomString() }}"
+              - "Option B - {{ $randomString() }}"
+              - "Option C - {{ $randomString() }}"
+              - "Option D - {{ $randomString() }}"
+            allowMultipleSelections: "{{ $randomBoolean() }}"
+            maxSelections: "{{ $randomInt(1, 3) }}"
+          capture:
+            - json: "$.id"
+              as: "newPollId"
+      
+      # Visit the newly created poll
+      - get:
+          url: "/poll/{{ newPollId }}"
+          ifTrue: "{{ newPollId }}"
+
+  # Browse polls scenario - 10% of traffic
+  - name: "Browse polls feed"
+    weight: 10
+    flow:
+      # Visit home page
+      - get:
+          url: "/"
+      
+      # Browse polls feed
+      - get:
+          url: "/api/polls/feed"
+          qs:
+            page: "{{ $randomInt(1, 3) }}"
+            limit: 10
+      
+      # Think time
+      - think: "{{ $randomInt(1, 5) }}"
+
+  # Results checking scenario - 5% of traffic
+  - name: "Check poll results"
+    weight: 5
+    flow:
+      # Get poll results directly
+      - get:
+          url: "/api/polls/{{ pollId }}/results"
+      
+      # Think time
+      - think: "{{ $randomInt(1, 3) }}"
+      
+      # Get poll details
+      - get:
+          url: "/api/polls/{{ pollId }}"
+
+# Custom functions for realistic data generation
+processor: "./scripts/artillery-processor.js"

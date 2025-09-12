@@ -51,7 +51,7 @@ const Header: React.FC = () => {
                     className="w-full h-full"
                   />
                 </motion.div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-cotton-mint rounded-full animate-pulse"></div>
+                <div className="absolute pt-4 -top-0 -right-1 text-gradient-primary uppercase text-xs animate-pulse">beta</div>
               </div>
             </Link>
           </motion.div>
