@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/database'
-import { PollResults } from '@/types/poll'
+import { PollResults, Poll } from '@/types/poll'
 
 export async function GET(
   request: NextRequest,
@@ -10,7 +10,7 @@ export async function GET(
     const { id: pollId } = await params
 
     // Get poll data
-    const pollResult = await query('SELECT * FROM polls WHERE id = $1', [pollId])
+    const pollResult = await query<Poll>('SELECT * FROM polls WHERE id = $1', [pollId])
     
     if (pollResult.rows.length === 0) {
       return NextResponse.json(

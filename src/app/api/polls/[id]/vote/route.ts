@@ -1,7 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/database'
-import { v4 as uuidv4 } from 'uuid'
-import { VoteData } from '@/types/poll'
+import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/database';
+import { v4 as uuidv4 } from 'uuid';
+import { VoteData } from '@/types/poll';
+import { getClientIP } from '@/utils/ip';
+import { 
+  HTTP_STATUS, 
+  ERROR_MESSAGES,
+  SOCKET_CONFIG,
+} from '@/constants/config';
 
 export async function POST(
   request: NextRequest,
@@ -15,18 +21,17 @@ export async function POST(
     // Handle both single and multiple selections
     const optionIndices = Array.isArray(optionIndex) ? optionIndex : [optionIndex]
 
-    if (optionIndices.length === 0 || optionIndices.some(idx => idx === undefined || idx < 0)) {
+    // Validate option indices
+    const validationError = validateVoteData(optionIndices);
+    if (validationError) {
       return NextResponse.json(
-        { error: 'Valid option index(es) required' },
-        { status: 400 }
-      )
+        { error: validationError },
+        { status: HTTP_STATUS.BAD_REQUEST }
+      );
     }
 
-    // Get voter IP
-    const forwarded = request.headers.get('x-forwarded-for')
-    const voterIp = forwarded ? forwarded.split(',')[0] : 
-                   request.headers.get('x-real-ip') || 
-                   'unknown'
+    // Get voter IP using secure utility function
+    const voterIp = getClientIP(request);
 
     // Verify poll exists and get poll settings
     const pollResult = await query(
@@ -36,9 +41,9 @@ export async function POST(
 
     if (pollResult.rows.length === 0) {
       return NextResponse.json(
-        { error: 'Poll not found' },
-        { status: 404 }
-      )
+        { error: ERROR_MESSAGES.POLL_NOT_FOUND },
+        { status: HTTP_STATUS.NOT_FOUND }
+      );
     }
 
     const poll = pollResult.rows[0]
@@ -50,34 +55,19 @@ export async function POST(
     const allowMultiple = poll.allow_multiple_selections || false
     const maxSelections = poll.max_selections || 1
 
-    // Validate selection rules
-    if (!allowMultiple && optionIndices.length > 1) {
+    // Validate selection rules against poll configuration
+    const selectionError = validateSelectionRules({
+      optionIndices,
+      allowMultiple,
+      maxSelections,
+      totalOptions: options.length,
+    });
+    
+    if (selectionError) {
       return NextResponse.json(
-        { error: 'This poll only allows single selection' },
-        { status: 400 }
-      )
-    }
-
-    if (allowMultiple && optionIndices.length > maxSelections) {
-      return NextResponse.json(
-        { error: `Maximum ${maxSelections} selections allowed` },
-        { status: 400 }
-      )
-    }
-
-    if (optionIndices.some(idx => idx >= options.length)) {
-      return NextResponse.json(
-        { error: 'Invalid option index' },
-        { status: 400 }
-      )
-    }
-
-    // Check for duplicate selections
-    if (new Set(optionIndices).size !== optionIndices.length) {
-      return NextResponse.json(
-        { error: 'Duplicate selections not allowed' },
-        { status: 400 }
-      )
+        { error: selectionError },
+        { status: HTTP_STATUS.BAD_REQUEST }
+      );
     }
 
     // Check if this IP has already voted on this poll (for single selection polls)
@@ -90,9 +80,9 @@ export async function POST(
 
       if (existingVoteResult.rows.length > 0) {
         return NextResponse.json(
-          { error: 'You have already voted on this poll' },
-          { status: 409 }
-        )
+          { error: ERROR_MESSAGES.ALREADY_VOTED },
+          { status: HTTP_STATUS.CONFLICT }
+        );
       }
     } else {
       // For multiple selection polls, check if they've already voted for any of these options
@@ -106,18 +96,18 @@ export async function POST(
 
       if (alreadyVoted) {
         return NextResponse.json(
-          { error: 'You have already voted for one or more of these options' },
-          { status: 409 }
-        )
+          { error: ERROR_MESSAGES.ALREADY_VOTED_OPTIONS },
+          { status: HTTP_STATUS.CONFLICT }
+        );
       }
 
       // Check if adding these votes would exceed max selections
       const totalSelections = existingIndices.length + optionIndices.length
       if (totalSelections > maxSelections) {
         return NextResponse.json(
-          { error: `Adding these selections would exceed the maximum of ${maxSelections} selections` },
-          { status: 400 }
-        )
+          { error: `${ERROR_MESSAGES.EXCEEDS_MAX_SELECTIONS} ${maxSelections} selections` },
+          { status: HTTP_STATUS.BAD_REQUEST }
+        );
       }
     }
 
@@ -154,11 +144,15 @@ export async function POST(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const io = (global as any).io
       if (io) {
-        io.to(`poll-${pollId}`).emit('pollResults', {
+        const roomName = `${SOCKET_CONFIG.POLL_ROOM_PREFIX}${pollId}`;
+        io.to(roomName).emit('pollResults', {
           totalVotes,
           results
-        })
-        console.log(`Broadcasted poll results to poll-${pollId} room`)
+        });
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Broadcasted poll results to ${roomName} room`);
+        }
       } else {
         console.log('Socket.IO instance not found - results will not be broadcast in real-time')
       }
@@ -167,12 +161,76 @@ export async function POST(
       // Don't fail the vote if broadcast fails
     }
 
-    return NextResponse.json({ success: true }, { status: 201 })
+    return NextResponse.json(
+      { success: true }, 
+      { status: HTTP_STATUS.CREATED }
+    );
   } catch (error) {
     console.error('Error recording vote:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+      { error: ERROR_MESSAGES.INTERNAL_SERVER_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+    );
   }
+}
+
+/**
+ * Validate vote data structure and basic constraints
+ * 
+ * @param optionIndices - Array of option indices to validate
+ * @returns Error message if validation fails, null if valid
+ */
+function validateVoteData(optionIndices: number[]): string | null {
+  if (!Array.isArray(optionIndices) || optionIndices.length === 0) {
+    return ERROR_MESSAGES.INVALID_OPTION_INDEX;
+  }
+  
+  // Check for invalid indices (negative numbers, undefined, null)
+  if (optionIndices.some(idx => idx === undefined || idx === null || idx < 0)) {
+    return ERROR_MESSAGES.INVALID_OPTION_INDEX;
+  }
+  
+  // Check for non-integer indices
+  if (optionIndices.some(idx => !Number.isInteger(idx))) {
+    return ERROR_MESSAGES.INVALID_OPTION_INDEX;
+  }
+  
+  return null;
+}
+
+/**
+ * Validate selection rules against poll configuration
+ * 
+ * @param params - Object containing validation parameters
+ * @returns Error message if validation fails, null if valid
+ */
+function validateSelectionRules(params: {
+  optionIndices: number[];
+  allowMultiple: boolean;
+  maxSelections: number;
+  totalOptions: number;
+}): string | null {
+  const { optionIndices, allowMultiple, maxSelections, totalOptions } = params;
+  
+  // Check if poll allows multiple selections but user provided multiple
+  if (!allowMultiple && optionIndices.length > 1) {
+    return ERROR_MESSAGES.SINGLE_SELECTION_ONLY;
+  }
+  
+  // Check if user exceeded maximum allowed selections
+  if (allowMultiple && optionIndices.length > maxSelections) {
+    return `Maximum ${maxSelections} ${ERROR_MESSAGES.MAX_SELECTIONS_EXCEEDED}`;
+  }
+  
+  // Check if all option indices are within valid range
+  if (optionIndices.some(idx => idx >= totalOptions)) {
+    return ERROR_MESSAGES.INVALID_OPTION;
+  }
+  
+  // Check for duplicate selections
+  if (new Set(optionIndices).size !== optionIndices.length) {
+    return ERROR_MESSAGES.DUPLICATE_SELECTIONS;
+  }
+  
+  return null;
 }
