@@ -3,25 +3,22 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { CreatePollData } from '@/types/poll'
+import { CreatePollData, CreateImageOption } from '@/types/poll'
 import { useAnalytics } from '@/hooks/useAnalytics'
+import ImagePollCreator from '@/components/ImagePollCreator'
 
 export default function CreatePoll() {
   const [question, setQuestion] = useState('')
   const [options, setOptions] = useState(['', ''])
+  const [imageOptions, setImageOptions] = useState<CreateImageOption[]>([
+    { imageUrl: '', caption: '' },
+    { imageUrl: '', caption: '' }
+  ])
+  const [pollType, setPollType] = useState<'text' | 'image'>('text')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [pollType, setPollType] = useState('Multiple choice')
-  const [showSettings, setShowSettings] = useState(false)
   const [allowMultipleSelections, setAllowMultipleSelections] = useState(false)
   const [maxSelections, setMaxSelections] = useState(2)
-  const [settings, setSettings] = useState({
-    requireParticipantNames: false,
-    votingSecurity: 'One vote per IP address',
-    blockVPNUsers: true,
-    useCAPTCHA: false,
-    showAdvancedSettings: false
-  })
   const router = useRouter()
   const { trackPollCreation } = useAnalytics()
 
@@ -55,19 +52,39 @@ export default function CreatePoll() {
       return
     }
 
-    const validOptions = options.filter(opt => opt.trim() !== '')
-    if (validOptions.length < 2) {
-      setError('At least 2 options are required')
-      setLoading(false)
-      return
+    // Validate based on poll type
+    if (pollType === 'text') {
+      const validOptions = options.filter(opt => opt.trim() !== '')
+      if (validOptions.length < 2) {
+        setError('At least 2 options are required')
+        setLoading(false)
+        return
+      }
+    } else {
+      const validImageOptions = imageOptions.filter(opt => opt.imageUrl.trim() !== '')
+      if (validImageOptions.length < 2) {
+        setError('At least 2 image options with URLs are required')
+        setLoading(false)
+        return
+      }
     }
 
     try {
       const pollData: CreatePollData = {
         question: question.trim(),
-        options: validOptions.map(opt => opt.trim()),
+        pollType,
+        options: pollType === 'text' ? options : [], // Empty array for image polls
         allowMultipleSelections,
         maxSelections: allowMultipleSelections ? maxSelections : 1
+      }
+
+      if (pollType === 'text') {
+        const validOptions = options.filter(opt => opt.trim() !== '')
+        pollData.options = validOptions.map(opt => opt.trim())
+      } else {
+        const validImageOptions = imageOptions.filter(opt => opt.imageUrl.trim() !== '')
+        pollData.imageOptions = validImageOptions
+        pollData.options = validImageOptions.map((opt, index) => opt.caption || `Image ${index + 1}`)
       }
 
       const response = await fetch('/api/polls', {
@@ -86,7 +103,8 @@ export default function CreatePoll() {
       const { pollId } = await response.json()
       
       // Track poll creation for analytics
-      trackPollCreation(allowMultipleSelections ? 'multiple_choice' : 'single_choice')
+      const pollAnalyticsType = `${pollType}_${allowMultipleSelections ? 'multiple' : 'single'}`
+      trackPollCreation(pollAnalyticsType)
       
       router.push(`/poll/${pollId}`)
     } catch (err) {
@@ -120,11 +138,46 @@ export default function CreatePoll() {
               <h1 className="text-3xl font-bold text-gradient-primary">
                 Create a Poll
               </h1>
-              
             </div>
-            <p className="text-app-secondary text-base mb-8">
+            <p className="text-app-secondary text-base mb-6">
               Craft engaging questions and gather real-time insights from your audience
             </p>
+
+            {/* Poll Type Tabs */}
+            <div className="flex bg-app-surface rounded-xl p-1 mb-8 border border-app">
+              <motion.button
+                type="button"
+                onClick={() => setPollType('text')}
+                className={`flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                  pollType === 'text'
+                    ? 'bg-white text-cotton-purple shadow-sm border border-cotton-purple/20'
+                    : 'text-app-secondary hover:text-app-primary'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                </svg>
+                Text Poll
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={() => setPollType('image')}
+                className={`flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                  pollType === 'image'
+                    ? 'bg-white text-cotton-purple shadow-sm border border-cotton-purple/20'
+                    : 'text-app-secondary hover:text-app-primary'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Image Poll
+              </motion.button>
+            </div>
           </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -152,123 +205,135 @@ export default function CreatePoll() {
             </motion.div>
 
             
-            {/* Answer Options */}
+            {/* Poll Content - Conditional based on type */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
-              <label className="block text-app-primary text-sm mb-3 font-semibold">
-                Answer Options <span className="text-cotton-pink">*</span>
-              </label>
-              <div className="space-y-4">
-                {options.map((option, index) => (
-                  <motion.div 
-                    key={index} 
-                    className="flex items-center space-x-3 group"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                  >
-                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-cotton-purple/20 to-cotton-pink/20 rounded-lg flex items-center justify-center text-sm font-bold text-app-primary border border-cotton-purple/20">
-                      {index + 1}
-                    </div>
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={option}
-                        onChange={(e) => updateOption(index, e.target.value)}
-                        placeholder={`Enter option ${index + 1}`}
-                        className="input-field w-full group-hover:shadow-lg group-hover:shadow-cotton-purple/10 transition-all duration-300"
-                        maxLength={100}
-                      />
-                    </div>
-                    {options.length > 2 && (
+              {pollType === 'text' ? (
+                <>
+                  <label className="block text-app-primary text-sm mb-3 font-semibold">
+                    Answer Options <span className="text-cotton-pink">*</span>
+                  </label>
+                  <div className="space-y-4">
+                    {options.map((option, index) => (
+                      <motion.div 
+                        key={index} 
+                        className="flex items-center space-x-3 group"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                      >
+                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-cotton-purple/20 to-cotton-pink/20 rounded-lg flex items-center justify-center text-sm font-bold text-app-primary border border-cotton-purple/20">
+                          {index + 1}
+                        </div>
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={option}
+                            onChange={(e) => updateOption(index, e.target.value)}
+                            placeholder={`Enter option ${index + 1}`}
+                            className="input-field w-full group-hover:shadow-lg group-hover:shadow-cotton-purple/10 transition-all duration-300"
+                            maxLength={100}
+                          />
+                        </div>
+                        {options.length > 2 && (
+                          <motion.button
+                            type="button"
+                            onClick={() => removeOption(index)}
+                            className="flex-shrink-0 w-8 h-8 text-app-secondary hover:text-cotton-pink bg-app-surface hover:bg-cotton-pink/10 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            aria-label="Remove option"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </motion.button>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between mt-4">
+                    {options.length < 10 && (
                       <motion.button
                         type="button"
-                        onClick={() => removeOption(index)}
-                        className="flex-shrink-0 w-8 h-8 text-app-secondary hover:text-cotton-pink bg-app-surface hover:bg-cotton-pink/10 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        aria-label="Remove option"
+                        onClick={addOption}
+                        className="btn-gradient-border flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-cotton-purple"
+                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </motion.button>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between mt-4">
-                {options.length < 10 && (
-                  <motion.button
-                    type="button"
-                    onClick={addOption}
-                    className="btn-gradient-border flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-cotton-purple"
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <span>Add Option</span>
-                  </motion.button>
-                )}
-                
-                {/* Multiple Selections Toggle */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      id="allowMultiple" 
-                      checked={allowMultipleSelections}
-                      onChange={(e) => setAllowMultipleSelections(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div 
-                      className={`w-10 h-5 rounded-full transition-colors duration-200 cursor-pointer ${
-                        allowMultipleSelections ? 'bg-cotton-purple' : 'bg-app-surface'
-                      }`}
-                      onClick={() => setAllowMultipleSelections(!allowMultipleSelections)}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${
-                        allowMultipleSelections ? 'translate-x-5' : 'translate-x-0.5'
-                      } translate-y-0.5`}></div>
-                    </div>
-                    <label htmlFor="allowMultiple" className="text-sm text-app-muted font-medium cursor-pointer">
-                      Multiple Choice
-                    </label>
-                  </div>
-                  
-                  {/* Max Selections Counter */}
-                  {allowMultipleSelections && (
-                    <div className="flex items-center gap-2 bg-app-surface rounded-lg px-3 py-1">
-                      <button
-                        type="button"
-                        onClick={() => setMaxSelections(Math.max(2, maxSelections - 1))}
-                        className="w-6 h-6 bg-cotton-purple/20 hover:bg-cotton-purple/30 rounded-full flex items-center justify-center text-cotton-purple transition-colors"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                        </svg>
-                      </button>
-                      <span className="text-sm font-medium text-app-primary min-w-[20px] text-center">
-                        {maxSelections}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMaxSelections(Math.min(options.length, maxSelections + 1))}
-                        className="w-6 h-6 bg-cotton-purple/20 hover:bg-cotton-purple/30 rounded-full flex items-center justify-center text-cotton-purple transition-colors"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                      </button>
-                    </div>
-                  )}
+                        <span>Add Option</span>
+                      </motion.button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <ImagePollCreator 
+                  imageOptions={imageOptions}
+                  onImageOptionsChange={setImageOptions}
+                />
+              )}
+
+              {/* Multiple Selections Toggle - shown for both types */}
+              <div className="flex items-center justify-center gap-3 mt-6 pt-6 border-t border-app">
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    id="allowMultiple" 
+                    checked={allowMultipleSelections}
+                    onChange={(e) => setAllowMultipleSelections(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div 
+                    className={`w-10 h-5 rounded-full transition-colors duration-200 cursor-pointer ${
+                      allowMultipleSelections ? 'bg-cotton-purple' : 'bg-app-surface'
+                    }`}
+                    onClick={() => setAllowMultipleSelections(!allowMultipleSelections)}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${
+                      allowMultipleSelections ? 'translate-x-5' : 'translate-x-0.5'
+                    } translate-y-0.5`}></div>
+                  </div>
+                  <label htmlFor="allowMultiple" className="text-sm text-app-muted font-medium cursor-pointer">
+                    Allow Multiple Selections
+                  </label>
                 </div>
+                
+                {/* Max Selections Counter */}
+                {allowMultipleSelections && (
+                  <div className="flex items-center gap-2 bg-app-surface rounded-lg px-3 py-1">
+                    <button
+                      type="button"
+                      onClick={() => setMaxSelections(Math.max(2, maxSelections - 1))}
+                      className="w-6 h-6 bg-cotton-purple/20 hover:bg-cotton-purple/30 rounded-full flex items-center justify-center text-cotton-purple transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                      </svg>
+                    </button>
+                    <span className="text-sm font-medium text-app-primary min-w-[20px] text-center">
+                      {maxSelections}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMaxSelections(Math.min(
+                        pollType === 'text' ? options.length : imageOptions.length, 
+                        maxSelections + 1
+                      ))}
+                      className="w-6 h-6 bg-cotton-purple/20 hover:bg-cotton-purple/30 rounded-full flex items-center justify-center text-cotton-purple transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
 

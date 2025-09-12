@@ -2,10 +2,19 @@ export interface Poll {
   id: string
   question: string
   options: string[]
+  poll_type?: 'text' | 'image'
+  image_options?: PollImageOption[]
   allow_multiple_selections?: boolean
   max_selections?: number
   created_at: string
   updated_at: string
+}
+
+export interface PollImageOption {
+  id: string
+  image_url: string
+  caption?: string
+  order_index: number
 }
 
 export interface Vote {
@@ -29,8 +38,15 @@ export interface PollResults {
 export interface CreatePollData {
   question: string
   options: string[]
+  pollType?: 'text' | 'image'
+  imageOptions?: CreateImageOption[]
   allowMultipleSelections?: boolean
   maxSelections?: number
+}
+
+export interface CreateImageOption {
+  imageUrl: string
+  caption?: string
 }
 
 export interface VoteData {

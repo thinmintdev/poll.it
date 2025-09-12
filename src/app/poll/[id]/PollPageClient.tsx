@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import PollChart from '@/components/PollChart'
 import ShareModal from '@/components/ShareModal'
+import ImagePollVoting from '@/components/ImagePollVoting'
 import { Poll } from '@/types/poll'
 import { useEffect, useState } from 'react'
 import { useAnalytics } from '@/hooks/useAnalytics'
@@ -139,7 +140,9 @@ export default function PollPageClient({ id }: PollPageClientProps) {
         return prev
       })
     } else {
+      // For single selection, update both states to maintain consistency
       setSelectedOption(index)
+      setSelectedOptions([index])
     }
   }
 
@@ -232,8 +235,6 @@ export default function PollPageClient({ id }: PollPageClientProps) {
               {poll?.question}
             </h1>
             <div className="flex items-center space-x-1 text-cotton-mint text-sm">
-              <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
-              <span className="font-medium">Live</span>
             </div>
           </div>
           <div className="flex items-center justify-center space-x-6 text-app-secondary">
@@ -253,7 +254,7 @@ export default function PollPageClient({ id }: PollPageClientProps) {
         {/* Two Column Layout */}
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column: Voting Phase or Results */}
-          <div className="card">
+          <div className={`card ${poll?.poll_type === 'image' ? 'lg:col-span-2' : ''}`}>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-app-primary text-xl font-bold">{hasVoted ? 'Results' : 'Cast Your Vote'}</h2>
@@ -282,214 +283,233 @@ export default function PollPageClient({ id }: PollPageClientProps) {
               </button>
             </div>
             
-            {!hasVoted ? (
-              <div>
-                <div className="space-y-4 mb-6">
-                  {poll?.options.map((option, index) => {
-                    const isSelected = poll?.allow_multiple_selections 
-                      ? selectedOptions.includes(index)
-                      : selectedOption === index
-                    
-                    return (
-                      <label
-                        key={index}
-                        className={`w-full cursor-pointer ${isSelected ? 'btn-gradient-border text-cotton-purple' : 'btn-secondary'}`}
-                      >
-                        <input
-                          type={poll?.allow_multiple_selections ? "checkbox" : "radio"}
-                          name="poll-option"
-                          value={index}
-                          checked={isSelected}
-                          onChange={() => handleOptionSelect(index)}
-                          className="sr-only"
-                        />
-                        <span className="text-center w-full flex items-center justify-center gap-2">
-                          {poll?.allow_multiple_selections && (
-                            <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
-                              isSelected ? 'bg-cotton-purple border-cotton-purple' : 'border-app-muted'
-                            }`}>
-                              {isSelected && (
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </div>
-                          )}
-                          {option}
-                        </span>
-                      </label>
-                    )
-                  })}
-                </div>
-                
-                {poll?.allow_multiple_selections && (
-                  <div className="mb-4 text-sm text-app-muted text-center">
-                    {selectedOptions.length === 0 
-                      ? `Select up to ${poll.max_selections || 1} option${(poll.max_selections || 1) > 1 ? 's' : ''}`
-                      : `${selectedOptions.length} of ${poll.max_selections || 1} selected`
-                    }
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={handleVote}
-                    disabled={
-                      (poll?.allow_multiple_selections ? selectedOptions.length === 0 : selectedOption === null) || 
-                      voting
-                    }
-                    className="btn-primary w-full"
-                  >
-                    {voting ? 'Voting...' : 'Vote'}
-                  </button>
-                  
-                  <button 
-                    className="btn-secondary" 
-                    onClick={() => setHasVoted(true)}
-                  >
-                    Results
-                  </button>
-                </div>
-                
-                {error && (
-                  <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                    <p className="text-red-400 text-sm">{error}</p>
-                  </div>
-                )}
-              </div>
+            {poll?.poll_type === 'image' ? (
+              <ImagePollVoting
+                poll={poll}
+                results={results}
+                hasVoted={hasVoted}
+                voting={voting}
+                selectedOptions={selectedOptions}
+                onOptionSelect={handleOptionSelect}
+                onVote={handleVote}
+                onBackToPoll={() => setHasVoted(false)}
+                onViewResults={() => setHasVoted(true)}
+                error={error}
+              />
             ) : (
-              <div>
-                <div className="space-y-4 mb-6">
-                  {poll?.options.map((option, index) => {
-                    const result = results?.results[index]
-                    const percent = result?.percentage || 0
-                    const voteCount = result?.votes || 0
-                    const isSelected = poll?.allow_multiple_selections 
-                      ? selectedOptions.includes(index)
-                      : selectedOption === index
-                    const colorTheme = getCottonColor(index)
-                    
-                    return (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className={`font-semibold truncate pr-4 text-sm ${isSelected ? 'text-cotton-purple' : 'text-app-primary'}`}>
-                            {option}
-                          </span>
-                          <div className="flex items-center space-x-3 text-sm">
-                            <span 
-                              className="font-bold"
-                              style={{ color: colorTheme.accent }}
-                            >
-                              {voteCount}
-                            </span>
-                            <span className="text-app-muted font-medium">
-                              {percent.toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
+              <>
+                {!hasVoted ? (
+                  <div>
+                    <div className="space-y-4 mb-6">
+                      {poll?.options.map((option, index) => {
+                        const isSelected = poll?.allow_multiple_selections 
+                          ? selectedOptions.includes(index)
+                          : selectedOption === index
                         
-                        <div className="relative">
-                          <div className="w-full bg-app-surface rounded-full h-3 overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-700 ease-out relative"
-                              style={{ 
-                                width: `${percent}%`,
-                                background: colorTheme.gradient
-                              }}
-                            >
-                              {percent > 0 && (
-                                <div 
-                                  className="absolute inset-0 rounded-full opacity-50"
-                                  style={{
-                                    background: `linear-gradient(90deg, transparent, ${colorTheme.accent}60)`,
-                                    animation: 'shimmer 2s infinite'
-                                  }}
-                                />
+                        return (
+                          <label
+                            key={index}
+                            className={`w-full cursor-pointer ${isSelected ? 'btn-gradient-border text-cotton-purple' : 'btn-secondary'}`}
+                          >
+                            <input
+                              type={poll?.allow_multiple_selections ? "checkbox" : "radio"}
+                              name="poll-option"
+                              value={index}
+                              checked={isSelected}
+                              onChange={() => handleOptionSelect(index)}
+                              className="sr-only"
+                            />
+                            <span className="text-center w-full flex items-center justify-center gap-2">
+                              {poll?.allow_multiple_selections && (
+                                <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
+                                  isSelected ? 'bg-cotton-purple border-cotton-purple' : 'border-app-muted'
+                                }`}>
+                                  {isSelected && (
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </div>
                               )}
+                              {option}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    
+                    {poll?.allow_multiple_selections && (
+                      <div className="mb-4 text-sm text-app-muted text-center">
+                        {selectedOptions.length === 0 
+                          ? `Select up to ${poll.max_selections || 1} option${(poll.max_selections || 1) > 1 ? 's' : ''}`
+                          : `${selectedOptions.length} of ${poll.max_selections || 1} selected`
+                        }
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={handleVote}
+                        disabled={
+                          (poll?.allow_multiple_selections ? selectedOptions.length === 0 : selectedOption === null) || 
+                          voting
+                        }
+                        className="btn-primary w-full"
+                      >
+                        {voting ? 'Voting...' : 'Vote'}
+                      </button>
+                      
+                      <button 
+                        className="btn-secondary" 
+                        onClick={() => setHasVoted(true)}
+                      >
+                        Results
+                      </button>
+                    </div>
+                    
+                    {error && (
+                      <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                        <p className="text-red-400 text-sm">{error}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="space-y-4 mb-6">
+                      {poll?.options.map((option, index) => {
+                        const result = results?.results[index]
+                        const percent = result?.percentage || 0
+                        const voteCount = result?.votes || 0
+                        const isSelected = poll?.allow_multiple_selections 
+                          ? selectedOptions.includes(index)
+                          : selectedOption === index
+                        const colorTheme = getCottonColor(index)
+                        
+                        return (
+                          <div key={index} className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className={`font-semibold truncate pr-4 text-sm ${isSelected ? 'text-cotton-purple' : 'text-app-primary'}`}>
+                                {option}
+                              </span>
+                              <div className="flex items-center space-x-3 text-sm">
+                                <span 
+                                  className="font-bold"
+                                  style={{ color: colorTheme.accent }}
+                                >
+                                  {voteCount}
+                                </span>
+                                <span className="text-app-muted font-medium">
+                                  {percent.toFixed(1)}%
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="relative">
+                              <div className="w-full bg-app-surface rounded-full h-3 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-700 ease-out relative"
+                                  style={{ 
+                                    width: `${percent}%`,
+                                    background: colorTheme.gradient
+                                  }}
+                                >
+                                  {percent > 0 && (
+                                    <div 
+                                      className="absolute inset-0 rounded-full opacity-50"
+                                      style={{
+                                        background: `linear-gradient(90deg, transparent, ${colorTheme.accent}60)`,
+                                        animation: 'shimmer 2s infinite'
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                
-                <p className="text-app-muted text-sm mb-6 text-center">Total votes: {results?.totalVotes || 0}</p>
-                
-                <div className="flex items-center gap-4">
-                  <button 
-                    className="btn-secondary w-full" 
-                    onClick={() => setHasVoted(false)}
-                  >
-                    Back to Poll
-                  </button>
-                  <button
-                    onClick={() => setShowShareModal(true)}
-                    className="btn-clear"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                    </svg>
-                    Share
-                  </button>
-                </div>
-              </div>
+                        )
+                      })}
+                    </div>
+                    
+                    <p className="text-app-muted text-sm mb-6 text-center">Total votes: {results?.totalVotes || 0}</p>
+                    
+                    <div className="flex items-center gap-4">
+                      <button 
+                        className="btn-secondary w-full" 
+                        onClick={() => setHasVoted(false)}
+                      >
+                        Back to Poll
+                      </button>
+                      <button
+                        onClick={() => setShowShareModal(true)}
+                        className="btn-clear"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                        </svg>
+                        Share
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Right Column: Chart and Feed */}
-          <div className="space-y-8">
-            {/* Chart Panel */}
-            <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+          {/* Right Column: Chart and Feed (only for text polls) */}
+          {poll?.poll_type !== 'image' && (
+            <div className="space-y-8">
+              {/* Chart Panel */}
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span className="text-app-primary font-semibold text-lg">Chart</span>
+                  </div>
+                  <div className="flex justify-center gap-2 bg-app-surface p-1 rounded-lg">
+                    <button
+                      onClick={() => setChartType('doughnut')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        chartType === 'doughnut' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
+                      }`}
+                    >
+                      Pie
+                    </button>
+                    <button
+                      onClick={() => setChartType('bar')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        chartType === 'bar' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
+                      }`}
+                    >
+                      Bar
+                    </button>
+                  </div>
+                </div>
+                <div className="h-[320px]">
+                  <PollChart
+                    results={poll?.options.map((option, index) => ({
+                      option,
+                      votes: results?.results[index]?.votes || 0,
+                      percentage: results?.results[index]?.percentage || 0
+                    })) || []}
+                    type={chartType}
+                  />
+                </div>
+              </div>
+              
+              {/* Comments/Feed Panel */}
+              <div className="card">
+                <div className="flex items-center gap-3 mb-4">
                   <svg className="w-6 h-6 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                  <span className="text-app-primary font-semibold text-lg">Chart</span>
+                  <span className="text-app-primary font-semibold text-lg">Feed</span>
                 </div>
-                <div className="flex justify-center gap-2 bg-app-surface p-1 rounded-lg">
-                  <button
-                    onClick={() => setChartType('doughnut')}
-                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                      chartType === 'doughnut' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
-                    }`}
-                  >
-                    Pie
-                  </button>
-                  <button
-                    onClick={() => setChartType('bar')}
-                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                      chartType === 'bar' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
-                    }`}
-                  >
-                    Bar
-                  </button>
-                </div>
-              </div>
-              <div className="h-[320px]">
-                <PollChart
-                  results={poll?.options.map((option, index) => ({
-                    option,
-                    votes: results?.results[index]?.votes || 0,
-                    percentage: results?.results[index]?.percentage || 0
-                  })) || []}
-                  type={chartType}
-                />
+                <p className="text-app-muted text-sm">Comments are disabled for this poll.</p>
               </div>
             </div>
-            
-            {/* Comments/Feed Panel */}
-            <div className="card">
-              <div className="flex items-center gap-3 mb-4">
-                <svg className="w-6 h-6 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <span className="text-app-primary font-semibold text-lg">Feed</span>
-              </div>
-              <p className="text-app-muted text-sm">Comments are disabled for this poll.</p>
-            </div>
-          </div>
+          )}
         </div>
         
         {/* Share Modal */}

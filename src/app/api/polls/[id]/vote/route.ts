@@ -35,7 +35,7 @@ export async function POST(
 
     // Verify poll exists and get poll settings
     const pollResult = await query(
-      'SELECT options, allow_multiple_selections, max_selections FROM polls WHERE id = $1',
+      'SELECT options, poll_type, allow_multiple_selections, max_selections FROM polls WHERE id = $1',
       [pollId]
     )
 
@@ -54,13 +54,24 @@ export async function POST(
 
     const allowMultiple = poll.allow_multiple_selections || false
     const maxSelections = poll.max_selections || 1
+    const isImagePoll = poll.poll_type === 'image'
+
+    // For image polls, get the total number of image options
+    let totalOptions = options.length
+    if (isImagePoll) {
+      const imageOptionsResult = await query(
+        'SELECT COUNT(*) as count FROM image_options WHERE poll_id = $1',
+        [pollId]
+      )
+      totalOptions = parseInt(imageOptionsResult.rows[0].count)
+    }
 
     // Validate selection rules against poll configuration
     const selectionError = validateSelectionRules({
       optionIndices,
       allowMultiple,
       maxSelections,
-      totalOptions: options.length,
+      totalOptions,
     });
     
     if (selectionError) {
@@ -131,12 +142,15 @@ export async function POST(
     `, [pollId])
 
     const totalVotes = resultsQuery.rows.reduce((sum, row) => sum + parseInt(row.votes), 0)
-    const results = options.map((_: string, index: number) => {
+    
+    // Build results array based on poll type
+    const results = []
+    for (let index = 0; index < totalOptions; index++) {
       const voteData = resultsQuery.rows.find(row => row.option_index === index)
       const votes = voteData ? parseInt(voteData.votes) : 0
       const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0
-      return { votes, percentage }
-    })
+      results.push({ votes, percentage })
+    }
 
     // Broadcast updated results to all clients in the poll room
     try {

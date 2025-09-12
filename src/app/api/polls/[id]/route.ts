@@ -23,6 +23,15 @@ export async function GET(
       poll.options = JSON.parse(poll.options)
     }
 
+    // If it's an image poll, fetch image options
+    if (poll.poll_type === 'image') {
+      const imageOptionsResult = await query(
+        'SELECT * FROM image_options WHERE poll_id = $1 ORDER BY order_index ASC',
+        [id]
+      )
+      poll.image_options = imageOptionsResult.rows
+    }
+
     return NextResponse.json(poll)
   } catch (error) {
     console.error('Error fetching poll:', error)

@@ -12,7 +12,7 @@ import {
  * POST /api/polls - Create a new poll
  * 
  * Creates a new poll with the provided question and options.
- * Supports both single and multiple selection polls with configurable limits.
+ * Supports both text and image polls with single/multiple selection modes.
  * 
  * @param request - Next.js request object containing poll data
  * @returns JSON response with poll ID or error message
@@ -24,6 +24,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { 
       question, 
       options, 
+      pollType = 'text',
+      imageOptions,
       allowMultipleSelections = POLL_CONFIG.DEFAULT_ALLOW_MULTIPLE, 
       maxSelections = POLL_CONFIG.DEFAULT_MAX_SELECTIONS 
     } = body;
@@ -32,6 +34,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const validationError = validatePollCreationData({
       question,
       options,
+      pollType,
+      imageOptions,
       allowMultipleSelections,
       maxSelections,
     });
@@ -49,10 +53,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Insert poll into database with proper error handling
     const result = await query(
       `INSERT INTO polls 
-       (id, question, options, allow_multiple_selections, max_selections) 
-       VALUES ($1, $2, $3, $4, $5) 
+       (id, question, options, poll_type, allow_multiple_selections, max_selections) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING *`,
-      [pollId, question, JSON.stringify(options), allowMultipleSelections, maxSelections]
+      [pollId, question, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections]
     );
 
     const poll = result.rows[0];
@@ -66,9 +70,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // If it's an image poll, insert image options
+    if (pollType === 'image' && imageOptions && imageOptions.length > 0) {
+      try {
+        for (let i = 0; i < imageOptions.length; i++) {
+          const imageOption = imageOptions[i];
+          await query(
+            `INSERT INTO image_options 
+             (id, poll_id, image_url, caption, order_index) 
+             VALUES ($1, $2, $3, $4, $5)`,
+            [uuidv4(), pollId, imageOption.imageUrl, imageOption.caption || null, i]
+          );
+        }
+      } catch (imageError) {
+        // If image options insertion fails, clean up the poll
+        await query('DELETE FROM polls WHERE id = $1', [pollId]);
+        console.error('Error inserting image options:', imageError);
+        return NextResponse.json(
+          { error: 'Failed to create image poll options' },
+          { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+        );
+      }
+    }
+
     // Log successful poll creation (in development)
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Poll created successfully: ${poll.id}`);
+      console.log(`${pollType} poll created successfully: ${poll.id}`);
     }
 
     return NextResponse.json(
@@ -100,46 +127,103 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * @returns Error message if validation fails, null if valid
  */
 function validatePollCreationData(data: CreatePollData): string | null {
-  const { question, options, allowMultipleSelections, maxSelections } = data;
+  const { question, options, pollType = 'text', imageOptions, allowMultipleSelections, maxSelections } = data;
   
   // Check required fields
-  if (!question || !options) {
-    return ERROR_MESSAGES.POLL_VALIDATION_ERROR;
+  if (!question) {
+    return 'Question is required';
   }
   
   // Validate question length
   if (question.trim().length === 0 || question.length > POLL_CONFIG.MAX_QUESTION_LENGTH) {
     return `Question must be between 1 and ${POLL_CONFIG.MAX_QUESTION_LENGTH} characters`;
   }
-  
-  // Validate options array
-  if (!Array.isArray(options) || options.length < POLL_CONFIG.MIN_OPTIONS) {
-    return ERROR_MESSAGES.POLL_VALIDATION_ERROR;
+
+  // Validate poll type
+  if (pollType !== 'text' && pollType !== 'image') {
+    return 'Poll type must be either "text" or "image"';
   }
-  
-  if (options.length > POLL_CONFIG.MAX_OPTIONS) {
-    return `Maximum ${POLL_CONFIG.MAX_OPTIONS} options allowed`;
-  }
-  
-  // Validate each option
-  for (let i = 0; i < options.length; i++) {
-    const option = options[i];
-    if (!option || typeof option !== 'string' || option.trim().length === 0) {
-      return `Option ${i + 1} cannot be empty`;
+
+  // Validate based on poll type
+  if (pollType === 'text') {
+    // Text poll validation
+    if (!options || !Array.isArray(options)) {
+      return 'Options are required for text polls';
     }
-    if (option.length > POLL_CONFIG.MAX_OPTION_LENGTH) {
-      return `Option ${i + 1} must be ${POLL_CONFIG.MAX_OPTION_LENGTH} characters or less`;
+    
+    if (options.length < POLL_CONFIG.MIN_OPTIONS) {
+      return `At least ${POLL_CONFIG.MIN_OPTIONS} options are required`;
     }
-  }
-  
-  // Check for duplicate options
-  const uniqueOptions = new Set(options.map(opt => opt.trim().toLowerCase()));
-  if (uniqueOptions.size !== options.length) {
-    return 'Duplicate options are not allowed';
+    
+    if (options.length > POLL_CONFIG.MAX_OPTIONS) {
+      return `Maximum ${POLL_CONFIG.MAX_OPTIONS} options allowed`;
+    }
+    
+    // Validate each text option
+    for (let i = 0; i < options.length; i++) {
+      const option = options[i];
+      if (!option || typeof option !== 'string' || option.trim().length === 0) {
+        return `Option ${i + 1} cannot be empty`;
+      }
+      if (option.length > POLL_CONFIG.MAX_OPTION_LENGTH) {
+        return `Option ${i + 1} must be ${POLL_CONFIG.MAX_OPTION_LENGTH} characters or less`;
+      }
+    }
+    
+    // Check for duplicate options
+    const uniqueOptions = new Set(options.map(opt => opt.trim().toLowerCase()));
+    if (uniqueOptions.size !== options.length) {
+      return 'Duplicate options are not allowed';
+    }
+
+  } else if (pollType === 'image') {
+    // Image poll validation
+    if (!imageOptions || !Array.isArray(imageOptions)) {
+      return 'Image options are required for image polls';
+    }
+    
+    if (imageOptions.length < POLL_CONFIG.MIN_OPTIONS) {
+      return `At least ${POLL_CONFIG.MIN_OPTIONS} image options are required`;
+    }
+    
+    if (imageOptions.length > POLL_CONFIG.MAX_OPTIONS) {
+      return `Maximum ${POLL_CONFIG.MAX_OPTIONS} image options allowed`;
+    }
+    
+    // Validate each image option
+    for (let i = 0; i < imageOptions.length; i++) {
+      const imageOption = imageOptions[i];
+      
+      if (!imageOption || !imageOption.imageUrl) {
+        return `Image option ${i + 1} must have a valid image URL`;
+      }
+      
+      // Validate image URL format
+      if (!isValidImageUrl(imageOption.imageUrl)) {
+        return `Image option ${i + 1} has an invalid image URL format`;
+      }
+      
+      // Validate caption length if provided
+      if (imageOption.caption && imageOption.caption.length > POLL_CONFIG.MAX_OPTION_LENGTH) {
+        return `Image option ${i + 1} caption must be ${POLL_CONFIG.MAX_OPTION_LENGTH} characters or less`;
+      }
+    }
+
+    // Check for duplicate image URLs
+    const uniqueImageUrls = new Set(imageOptions.map(opt => opt.imageUrl.trim().toLowerCase()));
+    if (uniqueImageUrls.size !== imageOptions.length) {
+      return 'Duplicate image URLs are not allowed';
+    }
+
+    // Ensure options array matches image options length for compatibility
+    if (!options || options.length !== imageOptions.length) {
+      return 'Options array must match image options for data consistency';
+    }
   }
   
   // Validate multiple selection settings
-  if (allowMultipleSelections && maxSelections && maxSelections > options.length) {
+  const optionCount = pollType === 'text' ? options.length : imageOptions?.length || 0;
+  if (allowMultipleSelections && maxSelections && maxSelections > optionCount) {
     return ERROR_MESSAGES.MAX_SELECTIONS_ERROR;
   }
   
@@ -148,4 +232,26 @@ function validatePollCreationData(data: CreatePollData): string | null {
   }
   
   return null; // No validation errors
+}
+
+/**
+ * Validate image URL format
+ * 
+ * @param url - URL to validate
+ * @returns true if valid image URL, false otherwise
+ */
+function isValidImageUrl(url: string): boolean {
+  try {
+    // Allow data URLs for uploaded images
+    if (url.startsWith('data:image/')) {
+      return true;
+    }
+    
+    // Validate HTTP/HTTPS URLs with image extensions
+    const urlObj = new URL(url);
+    return /^https?:$/i.test(urlObj.protocol) && 
+           /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(urlObj.pathname);
+  } catch {
+    return false;
+  }
 }
