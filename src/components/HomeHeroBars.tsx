@@ -148,7 +148,7 @@ const HomeHeroBars: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
-        >
+        >It&apos;s time for &nbsp;
           <span className="text-app-primary uppercase text-3xl"></span>
           <span className="relative inline-block">
             <RotatingText
@@ -200,7 +200,7 @@ const HomeHeroBars: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5 }}
         >
-          Get the real <span className="text-cotton-pink font-semibold">temp</span> of the chat.<br /> Polling so smooth, decisions happen in <span className="text-cotton-peach font-semibold">real-time</span>.
+          Quick and easy community polls.<br /> Watch decisions happen <span className="text-cotton-mint font-semibold">LIVE</span>.
         </motion.p>
         
         <motion.div 
