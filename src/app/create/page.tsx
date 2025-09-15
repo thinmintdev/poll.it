@@ -62,6 +62,8 @@ export default function CreatePoll() {
       }
     } else {
       const validImageOptions = imageOptions.filter(opt => opt.imageUrl.trim() !== '')
+      console.log('Image options:', imageOptions)
+      console.log('Valid image options:', validImageOptions)
       if (validImageOptions.length < 2) {
         setError('At least 2 image options with URLs are required')
         setLoading(false)
@@ -85,6 +87,7 @@ export default function CreatePoll() {
         const validImageOptions = imageOptions.filter(opt => opt.imageUrl.trim() !== '')
         pollData.imageOptions = validImageOptions
         pollData.options = validImageOptions.map((opt, index) => opt.caption || `Image ${index + 1}`)
+        console.log('Sending image poll data:', pollData)
       }
 
       const response = await fetch('/api/polls', {

@@ -30,6 +30,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       maxSelections = POLL_CONFIG.DEFAULT_MAX_SELECTIONS 
     } = body;
 
+    console.log('Received poll data:', { pollType, question, options, imageOptions });
+
     // Validate required fields and basic constraints
     const validationError = validatePollCreationData({
       question,
