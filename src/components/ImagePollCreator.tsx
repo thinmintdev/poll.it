@@ -229,7 +229,6 @@ export default function ImagePollCreator({
                     accept="image/*"
                     onChange={(e) => handleFileInputChange(e, index)}
                     className="hidden"
-                    capture="environment"
                   />
                 </div>
               </div>
