@@ -66,15 +66,28 @@ export default function ImagePollCreator({
     const imageFile = files.find(file => file.type.startsWith('image/'))
     
     if (imageFile) {
-      // For now, we'll use a placeholder URL
-      // In production, you'd upload to a service like Cloudinary or AWS S3
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        updateImageOption(index, { imageUrl: result })
-      }
-      reader.readAsDataURL(imageFile)
+      handleFileUpload(imageFile, index)
     }
+  }
+
+  const handleFileUpload = (file: File, index: number) => {
+    // For now, we'll use a placeholder URL
+    // In production, you'd upload to a service like Cloudinary or AWS S3
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      updateImageOption(index, { imageUrl: result })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0]
+    if (file && file.type.startsWith('image/')) {
+      handleFileUpload(file, index)
+    }
+    // Reset the input so the same file can be selected again
+    e.target.value = ''
   }
 
   const isValidImageUrl = (url: string) => {
@@ -195,10 +208,43 @@ export default function ImagePollCreator({
                 </div>
               </div>
 
+              {/* File Upload Button */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-app-primary text-xs font-medium mb-2">
+                    Upload Image
+                  </label>
+                  <label 
+                    htmlFor={`file-input-${index}`}
+                    className="w-full btn-gradient-border flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-cotton-purple cursor-pointer hover:scale-[1.02] hover:shadow-lg transition-all duration-200"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span>Choose Image</span>
+                  </label>
+                  <input
+                    id={`file-input-${index}`}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileInputChange(e, index)}
+                    className="hidden"
+                    capture="environment"
+                  />
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-app-border"></div>
+                <span className="text-xs text-app-muted">OR</span>
+                <div className="flex-1 h-px bg-app-border"></div>
+              </div>
+
               {/* Image URL Input */}
               <div>
                 <label className="block text-app-primary text-xs font-medium mb-2">
-                  Image URL <span className="text-cotton-pink">*</span>
+                  Image URL
                 </label>
                 <input
                   type="url"
@@ -236,8 +282,9 @@ export default function ImagePollCreator({
           </svg>
           <div>
             <p className="mb-1"><strong>Supported formats:</strong> JPG, PNG, GIF, WebP, SVG</p>
+            <p className="mb-1"><strong>Upload images:</strong> Use &quot;Choose Image&quot; button to select from gallery/camera</p>
             <p className="mb-1"><strong>Image URLs:</strong> Use direct links to images (ending in .jpg, .png, etc.)</p>
-            <p><strong>Drag &amp; drop:</strong> Drop images directly onto preview areas for quick upload</p>
+            <p><strong>Drag &amp; drop:</strong> Drop images directly onto preview areas for quick upload (desktop)</p>
           </div>
         </div>
       </div>
