@@ -42,9 +42,9 @@ export default function SocketHandler(
         pingInterval: 25000, // 25 seconds
         // CORS configuration for production
         cors: {
-          origin: process.env.NODE_ENV === 'production' 
-            ? [process.env.NEXT_PUBLIC_SITE_URL || 'https://poll.it']
-            : ['http://localhost:3000'],
+          origin: process.env.NODE_ENV === 'production'
+            ? [process.env.NEXT_PUBLIC_SITE_URL || 'https://poll.it.com']
+            : ['http://localhost:3000', 'http://localhost:3001'],
           methods: ['GET', 'POST'],
         },
         // Transports configuration
