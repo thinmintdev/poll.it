@@ -69,18 +69,46 @@ export default function PollPageClient({ id }: PollPageClientProps) {
 
     fetchPollAndResults()
 
-    const socket = io({ path: '/api/socket' })
+    // Initialize Socket.IO with enhanced error handling and reconnection
+    const socket = io({
+      path: '/api/socket',
+      timeout: 10000,
+      forceNew: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+      transports: ['polling', 'websocket']
+    })
 
     socket.on('connect', () => {
       console.log('Connected to socket server')
       socket.emit('join-poll', id)
     })
 
+    socket.on('disconnect', (reason) => {
+      console.log('Disconnected from socket server:', reason)
+    })
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error)
+    })
+
+    socket.on('reconnect', (attempt) => {
+      console.log('Reconnected to socket server on attempt:', attempt)
+      socket.emit('join-poll', id) // Rejoin poll room on reconnection
+    })
+
     socket.on('pollResults', (newResults: Results) => {
+      console.log('Received poll results update:', newResults)
       setResults(newResults)
     })
 
+    socket.on('joined-poll', (data) => {
+      console.log('Successfully joined poll room:', data)
+    })
+
     socket.on('error', (errorMessage: string) => {
+      console.error('Socket error:', errorMessage)
       setError(errorMessage)
     })
 

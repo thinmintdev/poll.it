@@ -20,9 +20,14 @@ import { SOCKET_CONFIG } from '@/constants/config';
  * @param res - Enhanced response object with Socket.IO server
  */
 export default function SocketHandler(
-  req: NextApiRequest, 
+  req: NextApiRequest,
   res: NextApiResponseServerIO
 ): void {
+  // Add request logging for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`Socket.IO request: ${req.method} ${req.url}`);
+  }
+
   // Check if Socket.IO server is already initialized
   if (res.socket.server.io) {
     if (process.env.NODE_ENV === 'development') {
@@ -43,9 +48,10 @@ export default function SocketHandler(
         // CORS configuration for production
         cors: {
           origin: process.env.NODE_ENV === 'production'
-            ? [process.env.NEXT_PUBLIC_SITE_URL || 'https://poll.it.com']
-            : ['http://localhost:3000', 'http://localhost:3001'],
+            ? [process.env.NEXT_PUBLIC_SITE_URL || 'https://poll.it.com', 'https://poll.it.com']
+            : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'],
           methods: ['GET', 'POST'],
+          credentials: true
         },
         // Transports configuration
         transports: ['websocket', 'polling'],
@@ -60,15 +66,16 @@ export default function SocketHandler(
 
       // Set up connection event handlers
       setupSocketEventHandlers(io);
-      
+
       console.log('Socket.IO server initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Socket.IO server:', error);
+      return res.status(500).json({ error: 'Failed to initialize Socket.IO server' });
     }
   }
-  
-  // End the HTTP response
-  res.end();
+
+  // Send success response for Socket.IO requests
+  res.status(200).json({ status: 'ok' });
 }
 
 /**
