@@ -51,9 +51,8 @@ export default function SimplifiedPollsFeed({
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const loadingRef = useRef<HTMLDivElement>(null)
-  const retryTimeoutRef = useRef<NodeJS.Timeout>()
-  const autoScrollRef = useRef<NodeJS.Timeout>()
-  const [isAutoScrolling, setIsAutoScrolling] = useState(false)
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const autoScrollRef = useRef<NodeJS.Timeout | null>(null)
   const [userInteracting, setUserInteracting] = useState(false)
 
   const fetchPolls = useCallback(async (page: number, isInitial = false) => {
@@ -170,7 +169,6 @@ export default function SimplifiedPollsFeed({
             }, 2000)
           }
 
-          setIsAutoScrolling(true)
           startAutoScroll() // Continue autoscroll
         }
       }, 1000) // Scroll every 3 seconds
@@ -321,7 +319,6 @@ export default function SimplifiedPollsFeed({
           onTouchStart={() => setUserInteracting(true)}
           onTouchEnd={() => setTimeout(() => setUserInteracting(false), 2000)}
           onScroll={() => {
-            setIsAutoScrolling(false)
             setUserInteracting(true)
             // Reset user interaction after 3 seconds of no scrolling
             if (autoScrollRef.current) clearTimeout(autoScrollRef.current)

@@ -147,6 +147,17 @@ export default function CreatePoll() {
               Craft engaging questions and gather real-time insights from your audience
             </p>
 
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+              >
+                {error}
+              </motion.div>
+            )}
+
             {/* Poll Type Tabs */}
             <div className="flex bg-app-surface rounded-xl p-1 mb-8 border border-app">
               <motion.button
