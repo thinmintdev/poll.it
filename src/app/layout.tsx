@@ -14,13 +14,48 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Poll.it - Real-time Polling Made Simple",
+  title: {
+    default: "Poll.it - Real-time Polling Made Simple",
+    template: "%s | Poll.it"
+  },
   description: "Create instant polls, get real-time results, and make decisions together. No sign-up required.",
+  keywords: [
+    'real-time polls', 'live polling', 'instant voting', 'audience engagement', 'community feedback',
+    'poll app', 'polling SaaS', 'live results', 'interactive voting'
+  ],
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  openGraph: {
+    title: 'Poll.it - Real-time Polling Made Simple',
+    description: 'Create instant polls, get real-time results, and make decisions together. No sign-up required.',
+    url: '/',
+    siteName: 'Poll.it',
+    images: [
+      {
+        url: '/poll_logo_cotton_candy.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Poll.it - Real-time Polling'
+      }
+    ],
+    locale: 'en_US',
+    type: 'website'
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Poll.it - Real-time Polling Made Simple',
+    description: 'Create instant polls, get real-time results, and make decisions together. No sign-up required.',
+    images: ['/poll_logo_cotton_candy.svg']
+  },
   icons: {
     icon: '/poll_logo.svg',
     shortcut: '/poll_logo.svg',
     apple: '/poll_logo.svg',
   },
+  themeColor: '#0d0f16',
+  alternates: {
+    canonical: '/',
+  },
+  category: 'technology'
 };
 
 export default function RootLayout({

@@ -20,6 +20,7 @@
     "load-test:report": "npx artillery report"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@neondatabase/serverless": "^1.0.1",
     "@supabase/supabase-js": "^2.53.0",
     "@types/pg": "^8.15.5",
