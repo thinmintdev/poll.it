@@ -12,14 +12,14 @@ export default function Home() {
         <div className="mb-8">
           <HomeHeroBars />
         </div>
-        <div className="grid lg:grid-cols-2 gap-8 lg:items-start">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column - Poll Creation Form */}
-          <div className="flex flex-col">
+          <div className="flex-1 lg:max-w-2xl">
             <CreatePoll />
           </div>
 
           {/* Right Column - Feed with Infinite Scroll */}
-          <div id="feed" className="flex flex-col overflow-hidden relative lg:h-[575px]">
+          <div id="feed" className="flex-1 flex flex-col overflow-hidden relative lg:max-h-[700px]">
             <PollFeedInfiniteScroll />
           </div>
         </div>

@@ -173,7 +173,7 @@ export default function PollCard({ poll }: PollCardProps) {
       </div>
 
       {/* Enhanced Action Buttons */}
-      <div className="flex items-center justify-between pt-6 mt-6 border-t border-app-surface relative z-10">
+      <div className="flex items-center justify-between pt-4 mt-4 border-t border-app-surface relative z-10">
         <Link
           href={`/poll/${poll.id}`}
           className="flex items-center space-x-2 text-app-muted hover:text-cotton-blue transition-all duration-200 group-hover:translate-x-1"

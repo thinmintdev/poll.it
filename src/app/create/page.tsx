@@ -118,19 +118,20 @@ export default function CreatePoll() {
   }
 
   return (
-    <div className="relative">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-20 right-1/4 w-40 h-40 bg-cotton-pink/5 rounded-full blur-2xl"></div>
-        <div className="absolute bottom-1/3 left-1/6 w-32 h-32 bg-cotton-blue/5 rounded-full blur-2xl"></div>
-      </div>
+    <div className="py-8 px-4">
+      <div className="max-w-2xl mx-auto relative">
+        {/* Background decorative elements */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-20 right-1/4 w-40 h-40 bg-cotton-pink/5 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-1/3 left-1/6 w-32 h-32 bg-cotton-blue/5 rounded-full blur-2xl"></div>
+        </div>
 
-      <motion.div 
-        className="card relative z-10"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
+        <motion.div
+          className="card relative z-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -380,6 +381,7 @@ export default function CreatePoll() {
             </motion.div>
           </form>
         </motion.div>
+      </div>
     </div>
   )
 }

@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/database';
 import { v4 as uuidv4 } from 'uuid';
 import { CreatePollData } from '@/types/poll';
-import { 
-  POLL_CONFIG, 
-  HTTP_STATUS, 
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import {
+  POLL_CONFIG,
+  HTTP_STATUS,
   ERROR_MESSAGES,
 } from '@/constants/config';
 
@@ -19,18 +21,27 @@ import {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    // Get user session (optional - allows anonymous polls)
+    const session = await getServerSession(authOptions);
+
     // Parse and validate request body
     const body: CreatePollData = await request.json();
-    const { 
-      question, 
-      options, 
+    const {
+      question,
+      options,
       pollType = 'text',
       imageOptions,
-      allowMultipleSelections = POLL_CONFIG.DEFAULT_ALLOW_MULTIPLE, 
-      maxSelections = POLL_CONFIG.DEFAULT_MAX_SELECTIONS 
+      allowMultipleSelections = POLL_CONFIG.DEFAULT_ALLOW_MULTIPLE,
+      maxSelections = POLL_CONFIG.DEFAULT_MAX_SELECTIONS
     } = body;
 
-    console.log('Received poll data:', { pollType, question, options, imageOptions });
+    console.log('Received poll data:', {
+      pollType,
+      question,
+      options,
+      imageOptions,
+      userId: session?.user?.id || 'anonymous'
+    });
 
     // Validate required fields and basic constraints
     const validationError = validatePollCreationData({
@@ -51,14 +62,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Generate unique poll ID
     const pollId = uuidv4();
-    
+    const userId = session?.user?.id || null;
+
     // Insert poll into database with proper error handling
     const result = await query(
-      `INSERT INTO polls 
-       (id, question, options, poll_type, allow_multiple_selections, max_selections) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+      `INSERT INTO polls
+       (id, question, options, poll_type, allow_multiple_selections, max_selections, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [pollId, question, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections]
+      [pollId, question, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections, userId]
     );
 
     const poll = result.rows[0];

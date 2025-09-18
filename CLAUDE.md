@@ -12,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Database Management**:
 - `npm run db:init` - Initialize/reset database with schema
+- `npm run db:auth` - Initialize authentication database schema
 - `npm run db:migrate` - Run database migrations
 - `npm run db:reset` - Reset database (alias for db:init)
 - `npm run db:test` - Test database connection
@@ -25,15 +26,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-This is a real-time polling application built with Next.js 15 (App Router), TypeScript, and NEON PostgreSQL database. The application uses a hybrid database setup with Supabase compatibility layer over direct PostgreSQL connections.
+This is a real-time polling application built with Next.js 15 (App Router), TypeScript, and NEON PostgreSQL database. The application uses a hybrid database setup with Supabase compatibility layer over direct PostgreSQL connections, and includes OAuth-based user authentication with Google and GitHub.
 
 ### Database Architecture
 
 **Dual Database Strategy**: The application implements a Supabase-compatible interface (`src/lib/supabase.ts`) while using direct PostgreSQL connections (`src/lib/database.ts`) for NEON database integration. This allows for flexibility in deployment while maintaining consistent API patterns.
 
 **Core Tables**:
-- `polls`: Stores poll questions and options (JSON serialized)
+- `polls`: Stores poll questions and options (JSON serialized) with optional user ownership
 - `votes`: Tracks individual votes with IP-based deduplication
+- `users`: User accounts from OAuth providers (Google, GitHub)
+- `accounts`: OAuth provider account associations
+- `sessions`: Active user sessions for authentication
 - Unique constraint: `(poll_id, voter_ip)` prevents duplicate voting
 
 ### Real-time Architecture
@@ -49,10 +53,19 @@ This is a real-time polling application built with Next.js 15 (App Router), Type
 ### API Structure
 
 **RESTful Endpoints**:
-- `POST /api/polls` - Create new poll
-- `GET /api/polls/[id]` - Get poll details  
+- `POST /api/polls` - Create new poll (optionally associated with authenticated user)
+- `GET /api/polls/[id]` - Get poll details (respects privacy settings)
 - `POST /api/polls/[id]/vote` - Submit vote (with IP deduplication)
 - `GET /api/polls/[id]/results` - Get aggregated results
+- `GET /api/user/polls` - Get authenticated user's polls
+- `GET /api/user/stats` - Get user statistics and analytics
+
+**Authentication & Authorization**:
+- NextAuth.js with Google and GitHub OAuth providers
+- JWT-based session management
+- Protected routes for user dashboard
+- Privacy controls for polls (public/private)
+- User ownership tracking for polls
 
 **Vote Validation**: IP-based voting restrictions with comprehensive validation (poll existence, option bounds, duplicate prevention).
 
@@ -65,8 +78,14 @@ This is a real-time polling application built with Next.js 15 (App Router), Type
 - `ShareModal.tsx` - Social sharing with Twitter, Facebook, LinkedIn, and copy-to-clipboard
 - `GoogleAnalytics.tsx` - Google Analytics 4 integration for tracking
 - `RotatingText.tsx` - Animated text component using GSAP
+- `AuthButton.tsx` - OAuth sign-in/sign-out with Google and GitHub
+- `UserDashboard.tsx` - User profile and poll management interface
+- `DashboardStats.tsx` - User analytics and statistics display
+- `PollManagement.tsx` - Poll listing with sorting and filtering
 
-**State Management**: React hooks with Socket.IO for real-time synchronization. No external state management library - uses local component state with WebSocket updates.
+**State Management**: React hooks with Socket.IO for real-time synchronization and NextAuth.js for authentication state. No external state management library - uses local component state with WebSocket updates and session management.
+
+**Authentication Integration**: NextAuth.js providers with session hooks (`useSession`) for client-side authentication state and `getServerSession` for server-side session access.
 
 **Analytics Integration**: Google Analytics 4 and Vercel Analytics for tracking poll creation, voting, and sharing actions via custom `useAnalytics` hook.
 
@@ -99,12 +118,23 @@ This is a real-time polling application built with Next.js 15 (App Router), Type
 
 ```
 DATABASE_URL=postgresql://...            # NEON database connection
+NEXTAUTH_URL=http://localhost:3000       # NextAuth.js URL (production URL in prod)
+NEXTAUTH_SECRET=your-secret-key          # NextAuth.js secret key
+GOOGLE_CLIENT_ID=...                     # Google OAuth client ID
+GOOGLE_CLIENT_SECRET=...                 # Google OAuth client secret
+GITHUB_CLIENT_ID=...                     # GitHub OAuth client ID
+GITHUB_CLIENT_SECRET=...                 # GitHub OAuth client secret
+
+# Optional
 NEXT_PUBLIC_SUPABASE_URL=https://...     # Supabase URL (optional)
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...        # Supabase key (optional)
 NEXT_PUBLIC_GA_TRACKING_ID=G-...         # Google Analytics 4 tracking ID (optional)
 ```
 
-**Database Schema**: Run `supabase-schema.sql` to initialize the database with proper tables, indexes, and triggers.
+**Database Schema**:
+1. Run `npm run db:init` to initialize the basic polling database
+2. Run `npm run db:auth` to set up authentication tables and user management
+3. See `docs/AUTHENTICATION_SETUP.md` for detailed OAuth configuration
 
 ## Key Constraints
 
@@ -112,6 +142,8 @@ NEXT_PUBLIC_GA_TRACKING_ID=G-...         # Google Analytics 4 tracking ID (optio
 - **Poll Options**: 2-10 options per poll, 100 characters max per option
 - **Question Length**: 500 characters maximum
 - **Multiple Selections**: Polls support single or multiple selection mode with configurable max selections
+- **User Authentication**: Optional - supports both anonymous and authenticated poll creation
+- **Poll Privacy**: Public polls are accessible to all, private polls only to owners
 - **Real-time Updates**: 5-second polling fallback if Socket.IO fails
 
 ## Testing Approach

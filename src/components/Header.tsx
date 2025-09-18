@@ -4,10 +4,13 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
+import AuthButton from '@/components/auth/AuthButton'
+import { useSession } from 'next-auth/react'
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { data: session } = useSession()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -58,28 +61,16 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            
-            
-            
-            
+            {session && (
+              <NavLink href="/dashboard" label="Dashboard" />
+            )}
+            <NavLink href="/create" label="Create Poll" />
+            <NavLink href="/#feed" label="Live Feed" />
           </nav>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons / Auth */}
           <div className="hidden md:flex items-center space-x-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 text-app-secondary hover:text-app-primary transition-colors"
-            >
-              Sign In
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05, boxShadow: "0 0 25px rgba(255, 107, 157, 0.4)" }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-2 bg-gradient-primary text-white rounded-xl font-medium hover-glow transition-all duration-300"
-            >
-              Get Started
-            </motion.button>
+            <AuthButton />
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -117,16 +108,13 @@ const Header: React.FC = () => {
             >
               <div className="flex flex-col space-y-4">
                 <MobileNavLink href="/" label="Home" onClick={() => setIsMobileMenuOpen(false)} />
+                {session && (
+                  <MobileNavLink href="/dashboard" label="Dashboard" onClick={() => setIsMobileMenuOpen(false)} />
+                )}
                 <MobileNavLink href="/create" label="Create Poll" onClick={() => setIsMobileMenuOpen(false)} />
                 <MobileNavLink href="/#feed" label="Live Feed" onClick={() => setIsMobileMenuOpen(false)} />
-                <MobileNavLink href="/about" label="About" onClick={() => setIsMobileMenuOpen(false)} />
                 <div className="pt-4 border-t border-app-light">
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full px-6 py-3 bg-gradient-primary text-white rounded-xl font-medium"
-                  >
-                    Get Started
-                  </motion.button>
+                  <AuthButton className="justify-center" />
                 </div>
               </div>
             </motion.div>

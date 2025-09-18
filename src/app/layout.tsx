@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import SessionProvider from '@/components/auth/SessionProvider';
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -47,17 +48,18 @@ export default function RootLayout({
           
           {/* Animated particles */}
           <div className="absolute inset-0">
-            <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-cotton-mint rounded-full opacity-60 animate-pulse"></div>
             <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-cotton-peach rounded-full opacity-40 animate-ping"></div>
             <div className="absolute top-1/2 left-3/4 w-1.5 h-1.5 bg-cotton-lavender rounded-full opacity-50 animate-pulse"></div>
           </div>
         </div>
         
-        <Header />
-        <main className="pt-20 relative z-0 flex-1">
-          {children}
-        </main>
-        <Footer />
+        <SessionProvider>
+          <Header />
+          <main className="pt-20 relative z-0 flex-1">
+            {children}
+          </main>
+          <Footer />
+        </SessionProvider>
       </body>
     </html>
   );

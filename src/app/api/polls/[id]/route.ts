@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { query } from '@/lib/database'
 
 export async function GET(
@@ -7,6 +9,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    const session = await getServerSession(authOptions)
 
     const result = await query('SELECT * FROM polls WHERE id = $1', [id])
     const poll = result.rows[0]
@@ -15,6 +18,14 @@ export async function GET(
       return NextResponse.json(
         { error: 'Poll not found' },
         { status: 404 }
+      )
+    }
+
+    // Check if poll is private and user is not the owner
+    if (!poll.is_public && poll.user_id !== session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Access denied. This poll is private.' },
+        { status: 403 }
       )
     }
 
