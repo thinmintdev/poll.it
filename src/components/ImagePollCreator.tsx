@@ -194,7 +194,7 @@ export default function ImagePollCreator({
                       {/* Left Half - Upload Button */}
                       <label
                         htmlFor={`file-input-${index}`}
-                        className="flex-1 flex items-center justify-center cursor-pointer hover:bg-app-surface/50 transition-colors border-r border-app-border"
+                        className="flex-1 flex items-center justify-center cursor-pointer hover:bg-app-surface/50 transition-colors border-r border-gray-600/50"
                       >
                         <svg className="w-8 h-8 text-cotton-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -266,9 +266,7 @@ export default function ImagePollCreator({
           </svg>
           <div>
             <p className="mb-1"><strong>Supported formats:</strong> JPG, PNG, GIF, WebP, SVG</p>
-            <p className="mb-1"><strong>Upload images:</strong> Use &quot;Choose Image&quot; button to select from gallery/camera</p>
             <p className="mb-1"><strong>Image URLs:</strong> Use direct links to images (ending in .jpg, .png, etc.)</p>
-            <p><strong>Drag &amp; drop:</strong> Drop images directly onto preview areas for quick upload (desktop)</p>
           </div>
         </div>
       </div>
