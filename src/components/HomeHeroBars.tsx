@@ -142,11 +142,11 @@ const HomeHeroBars: React.FC = () => {
       
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 md:px-8">
         <motion.h1 
-          className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight text-app-primary"
+          className="text-5xl sm:text-5xl md:text-7xl lg:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight text-app-primary"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
-        >Perfect for &nbsp;
+        >Perfect for <br />
           <span className="text-app-primary uppercase text-3xl"></span>
           <span className="relative inline-block">
             <RotatingText

@@ -8,12 +8,12 @@ import { motion } from "framer-motion";
 // SaaS style hero leveraging existing animated bar background
 const Hero: React.FC = () => {
   return (
-    <section className="relative w-full pt-10 sm:pt-16 md:pt-20 pb-12 md:pb-28 overflow-hidden">
-      {/* Full-bleed subtle gradient + noise backdrop */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,107,157,0.18),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(79,172,254,0.20),transparent_65%)]" />
-      <div className="absolute inset-0 opacity-[0.08] mix-blend-screen" style={{backgroundImage:'url("/noise.png")'}} />
-      <div className="absolute -top-40 -left-40 w-[560px] h-[560px] rounded-full bg-cotton-pink/10 blur-3xl" />
+    <section className="relative w-full pt-20 sm:pt-24 md:pt-28 pb-12 md:pb-28 overflow-hidden">
+      {/* Full-bleed subtle gradient + noise backdrop - extended to top */}
+      <div className="absolute inset-0 -top-20 bg-[radial-gradient(circle_at_top_left,rgba(255,107,157,0.18),transparent_60%)]" />
+      <div className="absolute inset-0 -top-20 bg-[radial-gradient(circle_at_bottom_right,rgba(79,172,254,0.20),transparent_65%)]" />
+      <div className="absolute inset-0 -top-20 opacity-[0.08] mix-blend-screen" style={{backgroundImage:'url("/noise.png")'}} />
+      <div className="absolute -top-60 -left-40 w-[560px] h-[560px] rounded-full bg-cotton-pink/10 blur-3xl" />
       <div className="absolute -bottom-32 -right-40 w-[600px] h-[600px] rounded-full bg-cotton-blue/10 blur-3xl" />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
