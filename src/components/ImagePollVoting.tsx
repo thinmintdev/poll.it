@@ -1,5 +1,5 @@
 'use client'
-import { Poll, PollImageOption } from '@/types/poll'
+import { Poll } from '@/types/poll'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 
@@ -24,6 +24,7 @@ interface ImagePollVotingProps {
   onBackToPoll: () => void
   onViewResults: () => void
   error: string | null
+  actuallyVoted?: boolean
 }
 
 export default function ImagePollVoting({
@@ -36,7 +37,8 @@ export default function ImagePollVoting({
   onVote,
   onBackToPoll,
   onViewResults,
-  error
+  error,
+  actuallyVoted
 }: ImagePollVotingProps) {
   const [imageLoadErrors, setImageLoadErrors] = useState<Set<number>>(new Set())
   const [imageLoading, setImageLoading] = useState<Set<number>>(new Set())
@@ -380,14 +382,16 @@ export default function ImagePollVoting({
         Total votes: {results?.totalVotes || 0}
       </p>
       
-      <div className="flex items-center gap-4">
-        <button 
-          className="btn-secondary w-full" 
-          onClick={onBackToPoll}
-        >
-          Back to Poll
-        </button>
-      </div>
+      {!actuallyVoted && (
+        <div className="flex items-center gap-4">
+          <button
+            className="btn-secondary w-full"
+            onClick={onBackToPoll}
+          >
+            Back to Poll
+          </button>
+        </div>
+      )}
       
       {/* Shimmer animation styles */}
       <style jsx>{`

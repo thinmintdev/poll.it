@@ -20,9 +20,10 @@ interface Results {
 
 interface PollPageClientProps {
   id: string
+  forceResults?: boolean
 }
 
-export default function PollPageClient({ id }: PollPageClientProps) {
+export default function PollPageClient({ id, forceResults = false }: PollPageClientProps) {
   const [poll, setPoll] = useState<Poll | null>(null)
   const [results, setResults] = useState<Results | null>(null)
   const [loading, setLoading] = useState(true)
@@ -31,6 +32,7 @@ export default function PollPageClient({ id }: PollPageClientProps) {
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
   const [voting, setVoting] = useState(false)
   const [hasVoted, setHasVoted] = useState(false)
+  const [actuallyVoted, setActuallyVoted] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [chartType, setChartType] = useState<'doughnut' | 'bar'>('doughnut')
   const { trackVote, trackShare } = useAnalytics()
@@ -38,9 +40,10 @@ export default function PollPageClient({ id }: PollPageClientProps) {
   useEffect(() => {
     const fetchPollAndResults = async () => {
       try {
-        const [pollRes, resultsRes] = await Promise.all([
+        const [pollRes, resultsRes, voteStatusRes] = await Promise.all([
           fetch(`/api/polls/${id}`),
           fetch(`/api/polls/${id}/results`),
+          fetch(`/api/polls/${id}/vote-status`),
         ])
 
         if (!pollRes.ok) {
@@ -54,7 +57,32 @@ export default function PollPageClient({ id }: PollPageClientProps) {
           const resultsData = await resultsRes.json()
           setResults(resultsData)
         }
-        // Don't throw for results, it might not have any yet
+
+        // Check if user has voted and set initial state
+        if (voteStatusRes.ok) {
+          const voteStatusData = await voteStatusRes.json()
+          const userHasVoted = voteStatusData.hasVoted
+          const userVotedOptions = voteStatusData.votedOptions || []
+
+          // Set hasVoted state based on actual vote status or forceResults prop
+          setHasVoted(forceResults || userHasVoted)
+          setActuallyVoted(userHasVoted)
+
+          // Set selected options if user has voted
+          if (userHasVoted) {
+            if (voteStatusData.allowMultiple) {
+              setSelectedOptions(userVotedOptions)
+            } else if (userVotedOptions.length > 0) {
+              setSelectedOption(userVotedOptions[0])
+              setSelectedOptions(userVotedOptions)
+            }
+          }
+        } else if (forceResults) {
+          // If we're forcing results but can't get vote status, still show results
+          setHasVoted(true)
+        }
+
+        // Don't throw for results or vote status, they might not have any yet
       } catch (err) {
         if (err instanceof Error) {
           console.error('Fetch error:', err)
@@ -115,7 +143,7 @@ export default function PollPageClient({ id }: PollPageClientProps) {
     return () => {
       socket.disconnect()
     }
-  }, [id])
+  }, [id, forceResults])
 
   const handleVote = async () => {
     const isMultiple = poll?.allow_multiple_selections
@@ -140,8 +168,9 @@ export default function PollPageClient({ id }: PollPageClientProps) {
       
       // Track vote for analytics
       trackVote(id)
-      
+
       setHasVoted(true)
+      setActuallyVoted(true)
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
@@ -323,6 +352,7 @@ export default function PollPageClient({ id }: PollPageClientProps) {
                 onBackToPoll={() => setHasVoted(false)}
                 onViewResults={() => setHasVoted(true)}
                 error={error}
+                actuallyVoted={actuallyVoted}
               />
             ) : (
               <>
@@ -461,12 +491,14 @@ export default function PollPageClient({ id }: PollPageClientProps) {
                     <p className="text-app-muted text-sm mb-6 text-center">Total votes: {results?.totalVotes || 0}</p>
                     
                     <div className="flex items-center gap-4">
-                      <button 
-                        className="btn-secondary w-full" 
-                        onClick={() => setHasVoted(false)}
-                      >
-                        Back to Poll
-                      </button>
+                      {!actuallyVoted && (
+                        <button
+                          className="btn-secondary w-full"
+                          onClick={() => setHasVoted(false)}
+                        >
+                          Back to Poll
+                        </button>
+                      )}
                       <button
                         onClick={() => setShowShareModal(true)}
                         className="btn-clear"
