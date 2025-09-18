@@ -2,8 +2,18 @@ import { createClient } from '@supabase/supabase-js'
 
 // For Neon database setup - we'll use a direct PostgreSQL approach
 // But keeping Supabase client structure for compatibility
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://tpwyivgmtlsqqrtgcbsr.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key'
+
+// Validate required environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
+}
+
+if (!supabaseKey) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
