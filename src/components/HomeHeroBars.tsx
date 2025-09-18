@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import RotatingText from './RotatingText';
 
@@ -60,7 +59,6 @@ const HomeHeroBars: React.FC = () => {
       mainGradient.addColorStop(0, bar.color);
       mainGradient.addColorStop(0.6, `${bar.color}88`);
       mainGradient.addColorStop(1, 'rgba(10, 10, 15, 0)');
-      
       // Draw main bar
       ctx.fillStyle = mainGradient;
       ctx.fillRect(x, y, barWidth, animatedHeight);
@@ -142,13 +140,13 @@ const HomeHeroBars: React.FC = () => {
         className="absolute inset-0 w-full h-full opacity-40"
       />
       
-      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 md:px-8 text-center">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 md:px-8">
         <motion.h1 
           className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight text-app-primary"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
-        >It&apos;s time for &nbsp;
+        >Perfect for &nbsp;
           <span className="text-app-primary uppercase text-3xl"></span>
           <span className="relative inline-block">
             <RotatingText
@@ -194,48 +192,10 @@ const HomeHeroBars: React.FC = () => {
           </span>
         </motion.h1>
         
-        <motion.p 
-          className="text-sm sm:text-base md:text-xl lg:text-2xl text-app-secondary mb-6 sm:mb-8 md:mb-12 max-w-xs sm:max-w-md md:max-w-3xl mx-auto leading-relaxed"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
-        >
-          Quick and easy community polls.<br /> Watch decisions happen <span className="text-cotton-mint font-semibold">LIVE</span>.
-        </motion.p>
+        {/* Tagline now moved into main Hero component - keeping spacing balanced */}
+        <div className="mb-2 sm:mb-4 md:mb-6" />
         
-        <motion.div 
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center items-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.7 }}
-        >
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <Link href="#create" className="btn-primary group relative overflow-hidden inline-flex">
-              <div className="absolute inset-0 bg-gradient-to-r from-cotton-pink/20 via-cotton-purple/20 to-cotton-blue/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-              <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Create a Poll
-            </Link>
-          </motion.div>
-          
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <Link href="/#feed" className="btn-secondary group inline-flex">
-              <svg className="w-5 h-5 mr-2 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v18a1 1 0 01-1 1H4a1 1 0 01-1-1V1a1 1 0 011-1h2a1 1 0 011 1v3" />
-              </svg>
-              View Live Feed
-            </Link>
-          </motion.div>
-        </motion.div>
+        {/* CTA controls removed here; handled in parent Hero component */}
       </div>
     </div>
   );

@@ -1,58 +1,52 @@
 "use client";
 import React from 'react';
 import HomeHeroBars from "../HomeHeroBars";
+import CreatePoll from "../../app/create/page";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
 // SaaS style hero leveraging existing animated bar background
 const Hero: React.FC = () => {
   return (
-    <section className="relative pt-10 sm:pt-16 md:pt-20 pb-12 md:pb-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-          <div className="order-2 lg:order-1">
-            <motion.h1
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight bg-gradient-to-br from-cotton-pink via-cotton-purple to-cotton-blue bg-clip-text text-transparent"
-              initial={{opacity:0, y:24}}
-              animate={{opacity:1, y:0}}
-              transition={{duration:0.7, ease:'easeOut'}}
-            >Realtime polls that actually feel alive.</motion.h1>
+    <section className="relative w-full pt-10 sm:pt-16 md:pt-20 pb-12 md:pb-28 overflow-hidden">
+      {/* Full-bleed subtle gradient + noise backdrop */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,107,157,0.18),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(79,172,254,0.20),transparent_65%)]" />
+      <div className="absolute inset-0 opacity-[0.08] mix-blend-screen" style={{backgroundImage:'url("/noise.png")'}} />
+      <div className="absolute -top-40 -left-40 w-[560px] h-[560px] rounded-full bg-cotton-pink/10 blur-3xl" />
+      <div className="absolute -bottom-32 -right-40 w-[600px] h-[600px] rounded-full bg-cotton-blue/10 blur-3xl" />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="w-full flex flex-col items-start justify-center">
+            {/* Hero bars animation replacing the main heading */}
+            <div className="w-full mb-8">
+              <HomeHeroBars />
+            </div>
             <motion.p
-              className="mt-6 text-lg md:text-xl text-app-secondary leading-relaxed max-w-xl"
-              initial={{opacity:0, y:16}}
+              className="text-lg md:text-xl lg:text-2xl text-app-secondary leading-relaxed max-w-2xl"
+              initial={{opacity:0, y:18}}
               animate={{opacity:1, y:0}}
-              transition={{duration:0.6, delay:0.15}}
+              transition={{duration:0.65, delay:0.15}}
             >Create a poll in seconds and watch the collective pulse update instantly. Built for communities, teams, streams & events.</motion.p>
             <motion.div
-              className="mt-8 flex flex-col sm:flex-row gap-4"
-              initial={{opacity:0, y:16}}
+              className="mt-10 flex flex-col sm:flex-row gap-5"
+              initial={{opacity:0, y:18}}
               animate={{opacity:1, y:0}}
-              transition={{duration:0.6, delay:0.25}}
+              transition={{duration:0.65, delay:0.3}}
             >
-              <Link href="#create" className="btn-primary inline-flex justify-center">Start Free</Link>
-              <Link href="#features" className="btn-secondary inline-flex justify-center">See Features</Link>
-            </motion.div>
-            <motion.div
-              className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center"
-              initial="hidden"
-              animate="visible"
-              variants={{hidden:{opacity:0}, visible:{opacity:1, transition:{staggerChildren:0.12}}}}
-            >
-              {[
-                {label:'Votes Cast', value:'120K+'},
-                {label:'Polls Created', value:'8.5K+'},
-                {label:'Avg. Latency', value:'<120ms'},
-                {label:'Uptime', value:'99.9%'}
-              ].map(stat => (
-                <motion.div key={stat.label} variants={{hidden:{opacity:0, y:8}, visible:{opacity:1, y:0}}} className="p-3 rounded-xl bg-white/5 backdrop-blur border border-white/10">
-                  <div className="text-xl font-semibold text-app-primary">{stat.value}</div>
-                  <div className="text-xs uppercase tracking-wide text-app-secondary/70">{stat.label}</div>
-                </motion.div>
-              ))}
+              <Link href="#create" className="btn-primary inline-flex justify-center min-w-[170px] text-base">Start Free</Link>
+              <Link href="#features" className="btn-secondary inline-flex justify-center min-w-[170px] text-base">See Features</Link>
             </motion.div>
           </div>
-          <div className="order-1 lg:order-2">
-            <HomeHeroBars />
+          <div className="relative w-full">
+            {/* Create poll form on the right side */}
+            <motion.div
+              initial={{opacity:0, x:24}}
+              animate={{opacity:1, x:0}}
+              transition={{duration:0.75, delay:0.2}}
+            >
+              <CreatePoll />
+            </motion.div>
           </div>
         </div>
       </div>

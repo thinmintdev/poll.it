@@ -137,16 +137,7 @@ export default function CreatePoll() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-1 h-8 bg-gradient-primary rounded-full"></div>
-              <h1 className="text-3xl font-bold text-gradient-primary">
-                Create a Poll
-              </h1>
-            </div>
-            <p className="text-app-secondary text-base mb-6">
-              Craft engaging questions and gather real-time insights from your audience
-            </p>
-
+     
             {/* Error Message */}
             {error && (
               <motion.div
@@ -276,11 +267,11 @@ export default function CreatePoll() {
                       <motion.button
                         type="button"
                         onClick={addOption}
-                        className="btn-gradient-border flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-cotton-purple"
-                        whileHover={{ scale: 1.02, y: -1 }}
-                        whileTap={{ scale: 0.98 }}
+                        className="btn-gradient-border flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium text-cotton-purple leading-none"
+                        whileHover={{ scale: 1.03, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
                         <span>Add Option</span>

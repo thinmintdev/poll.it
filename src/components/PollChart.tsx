@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -46,19 +46,79 @@ interface PollChartProps {
 type ChartRef = any;
 
 /**
+ * Cotton candy color palette matching the progress bars
+ */
+const getCottonColors = () => {
+  const colors = [
+    {
+      background: '#ff6b9d',
+      border: '#e85a8a',
+      name: 'cotton-pink'
+    },
+    {
+      background: '#4facfe',
+      border: '#3b8dd4',
+      name: 'cotton-blue'
+    },
+    {
+      background: '#9f7aea',
+      border: '#8a67d1',
+      name: 'cotton-purple'
+    },
+    {
+      background: '#00f5a0',
+      border: '#00d689',
+      name: 'cotton-mint'
+    },
+    {
+      background: '#ffa726',
+      border: '#e6941f',
+      name: 'cotton-peach'
+    },
+    {
+      background: '#e879f9',
+      border: '#d65fe6',
+      name: 'cotton-lavender'
+    },
+    // Extended colors for polls with more than 6 options
+    {
+      background: '#ff6b6b',
+      border: '#e85a5a',
+      name: 'cotton-coral'
+    },
+    {
+      background: '#4ecdc4',
+      border: '#3bb4ab',
+      name: 'cotton-teal'
+    },
+    {
+      background: '#45b7d1',
+      border: '#3ba2bd',
+      name: 'cotton-sky'
+    },
+    {
+      background: '#96ceb4',
+      border: '#7fb89d',
+      name: 'cotton-sage'
+    },
+  ]
+  return colors
+}
+
+/**
  * PollChart Component
- * 
+ *
  * Renders interactive charts for poll results using Chart.js.
  * Supports both doughnut and bar chart visualizations with
- * consistent theming and responsive design.
- * 
+ * cotton candy theming matching the progress bars.
+ *
  * Features:
  * - Responsive design that adapts to container size
- * - Accessible color scheme with high contrast
+ * - Cotton candy color scheme matching progress bars
  * - Interactive tooltips with vote counts and percentages
  * - Optimized re-rendering using React refs
  * - Support for up to 10 poll options with distinct colors
- * 
+ *
  * @param results - Array of poll results to visualize
  * @param type - Chart type ('doughnut' or 'bar')
  * @returns JSX element containing the chart
@@ -67,17 +127,54 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
   // Use ref to prevent unnecessary re-renders and maintain chart state
   const chartRef = useRef<ChartRef>(null);
 
-  // Prepare chart data with consistent theming
+  // Get cotton candy colors
+  const cottonColors = getCottonColors();
+  const backgroundColors = cottonColors.map(color => color.background);
+  const borderColors = cottonColors.map(color => color.border);
+
+  // Filter out any invalid results and ensure we have valid data
+  const validResults = results.filter(result =>
+    result &&
+    typeof result.option === 'string' &&
+    result.option.trim() !== '' &&
+    typeof result.votes === 'number' &&
+    !isNaN(result.votes)
+  );
+
+  // Force chart update when data changes for live updates
+  useEffect(() => {
+    if (chartRef.current && validResults.length > 0) {
+      const chart = chartRef.current;
+      if (chart.data) {
+        chart.data.labels = validResults.map(result => result.option);
+        chart.data.datasets[0].data = validResults.map(result => result.votes);
+        chart.update('none'); // Update without animation for faster live updates
+      }
+    }
+  }, [validResults]);
+
+  // If no valid results, show empty state
+  if (validResults.length === 0) {
+    return (
+      <div className={`${CHART_CONFIG.HEIGHT} w-full flex items-center justify-center`}>
+        <div className="text-center text-app-muted">
+          <p>No poll data available</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Prepare chart data with cotton candy theming
   const data = {
-    labels: results.map(result => result.option),
+    labels: validResults.map(result => result.option),
     datasets: [
       {
-        data: results.map(result => result.votes),
-        backgroundColor: CHART_CONFIG.BACKGROUND_COLORS,
-        borderColor: CHART_CONFIG.BORDER_COLORS,
+        data: validResults.map(result => result.votes),
+        backgroundColor: backgroundColors,
+        borderColor: borderColors,
         borderWidth: CHART_CONFIG.STYLING.borderWidth,
-        // Additional styling for better visual appeal
-        hoverBackgroundColor: CHART_CONFIG.BACKGROUND_COLORS.map(color => `${color}CC`), // Add 80% opacity
+        // Additional styling for better visual appeal with cotton candy colors
+        hoverBackgroundColor: backgroundColors.map(color => `${color}CC`), // Add 80% opacity
         hoverBorderWidth: CHART_CONFIG.STYLING.borderWidth + 1,
       },
     ],

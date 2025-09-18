@@ -548,6 +548,7 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
                 </div>
                 <div className="h-[320px]">
                   <PollChart
+                    key={`${chartType}-${results?.totalVotes || 0}`}
                     results={poll?.options.map((option, index) => ({
                       option,
                       votes: results?.results[index]?.votes || 0,

@@ -238,7 +238,7 @@ export default function SimplifiedPollsFeed({
   return (
     <div className={className}>
       {showHeader && (
-        <div className="flex justify-between items-center mt-14 mb-6">
+        <div className="flex justify-between items-center mt-8 mb-4 px-2 sm:px-0">
           <div className="flex items-center space-x-3">
             <div className="w-1 h-8 bg-gradient-primary rounded-full"></div>
             <h2 className="text-3xl font-bold text-gradient-primary">
@@ -308,7 +308,7 @@ export default function SimplifiedPollsFeed({
         </motion.div>
       )}
 
-      {/* Polls grid - Natural height handling */}
+      {/* Polls grid - cards floating against page background */}
       {polls.length > 0 && (
         <div
           ref={scrollContainerRef}
@@ -320,24 +320,20 @@ export default function SimplifiedPollsFeed({
           onTouchEnd={() => setTimeout(() => setUserInteracting(false), 2000)}
           onScroll={() => {
             setUserInteracting(true)
-            // Reset user interaction after 3 seconds of no scrolling
             if (autoScrollRef.current) clearTimeout(autoScrollRef.current)
             autoScrollRef.current = setTimeout(() => setUserInteracting(false), 3000)
           }}
         >
-          {/* Enhanced fade gradients */}
-          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-app-primary via-app-primary/70 to-transparent z-10 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-app-primary via-app-primary/70 to-transparent z-10 pointer-events-none"></div>
+          {/* Subtle fades without background clash */}
+          <div className="pointer-events-none absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/[0.04] to-transparent z-10"></div>
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/[0.04] to-transparent z-10"></div>
           <AnimatePresence mode="popLayout">
             {polls.map((poll, index) => (
               <motion.div
                 key={poll.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.5,
-                  delay: index < 10 ? index * 0.1 : 0 // Only animate first 10 items
-                }}
+                transition={{ duration: 0.5, delay: index < 10 ? index * 0.08 : 0 }}
                 layout
               >
                 <PollCard poll={poll} />
@@ -345,54 +341,52 @@ export default function SimplifiedPollsFeed({
             ))}
           </AnimatePresence>
 
-          {/* Infinite scroll loading indicator */}
-          {enableInfiniteScroll && (
-            <div ref={loadingRef} className="py-4">
-              {loading && (
-                <motion.div
-                  className="flex justify-center"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cotton-blue"></div>
-                </motion.div>
-              )}
-
-              {/* Error indicator for infinite scroll */}
-              {error && polls.length > 0 && (
-                <motion.div
-                  className="text-center"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <p className="text-red-500 text-sm mb-2">{error}</p>
-                  <button
-                    onClick={handleRetry}
-                    className="btn-secondary text-sm"
-                    disabled={loading}
+            {/* Infinite scroll loading indicator */}
+            {enableInfiniteScroll && (
+              <div ref={loadingRef} className="py-4">
+                {loading && (
+                  <motion.div
+                    className="flex justify-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                   >
-                    {loading ? 'Loading...' : 'Try Again'}
-                  </button>
-                </motion.div>
-              )}
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cotton-blue"></div>
+                  </motion.div>
+                )}
 
-              {/* End of results indicator */}
-              {!pagination.hasMore && !loading && !error && (
-                <motion.div
-                  className="text-center py-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <div className="flex items-center justify-center space-x-2 text-app-muted">
-                    <div className="w-8 h-px bg-app-surface"></div>
-                    <span className="text-sm font-medium">You&apos;ve reached the end</span>
-                    <div className="w-8 h-px bg-app-surface"></div>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          )}
+                {error && polls.length > 0 && (
+                  <motion.div
+                    className="text-center"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <p className="text-red-500 text-sm mb-2">{error}</p>
+                    <button
+                      onClick={handleRetry}
+                      className="btn-secondary text-sm"
+                      disabled={loading}
+                    >
+                      {loading ? 'Loading...' : 'Try Again'}
+                    </button>
+                  </motion.div>
+                )}
+
+                {!pagination.hasMore && !loading && !error && (
+                  <motion.div
+                    className="text-center py-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <div className="flex items-center justify-center space-x-2 text-app-muted">
+                      <div className="w-8 h-px bg-app-surface"></div>
+                      <span className="text-sm font-medium">You&apos;ve reached the end</span>
+                      <div className="w-8 h-px bg-app-surface"></div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
         </div>
       )}
     </div>

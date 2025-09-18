@@ -25,7 +25,7 @@ const PricingTeaser: React.FC = () => {
               className={`relative p-6 rounded-2xl border border-white/10 backdrop-blur bg-white/[0.04] flex flex-col ${t.highlight ? 'ring-1 ring-cotton-purple/40' : ''}`}
             >
               <h3 className="text-xl font-semibold text-app-primary">{t.name}</h3>
-              <div className="mt-4 text-3xl font-bold bg-gradient-to-r from-cotton-pink via-cotton-purple to-cotton-blue bg-clip-text text-transparent">{t.price}</div>
+              <div className="mt-4 text-3xl font-bold bg-gradient-to-r from-cotton-pink via-cotton-purple to-cotton-blue bg-clip-text">{t.price}</div>
               <p className="mt-3 text-sm text-app-secondary flex-1">{t.blurb}</p>
               {t.name === 'Free' && (
                 <Link href="#create" className="btn-primary mt-6 inline-flex justify-center">Get Started</Link>

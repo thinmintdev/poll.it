@@ -41,7 +41,7 @@ const Features: React.FC = () => {
     <section id="features" className="relative py-16 md:py-24 bg-gradient-to-b from-transparent via-white/2 to-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-cotton-pink via-cotton-purple to-cotton-blue bg-clip-text text-transparent">Everything you need</h2>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-app-primary">Everything you need</h2>
           <p className="mt-4 text-app-secondary text-base md:text-lg">Opinion flows are dynamic—your poll tool should be too. These core capabilities make collecting sentiment feel effortless.</p>
         </div>
         <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
