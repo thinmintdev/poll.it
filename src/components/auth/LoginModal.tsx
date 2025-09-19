@@ -1,7 +1,8 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 
 interface LoginModalProps {
@@ -12,6 +13,20 @@ interface LoginModalProps {
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [loadingProvider, setLoadingProvider] = useState<'google' | 'github' | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Prevent background scroll while modal open
+  useEffect(() => {
+    if (isOpen) {
+      const original = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = original }
+    }
+  }, [isOpen])
 
   const handleSignIn = async (provider: 'google' | 'github') => {
     setIsLoading(true)
@@ -26,10 +41,20 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }
   }
 
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  if (!isOpen || !mounted) return null
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="login-modal-title"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <motion.div
         className="card max-w-md w-full relative"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -45,7 +70,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gradient-primary">Sign In</h2>
+              <h2 id="login-modal-title" className="text-2xl font-bold text-gradient-primary">Sign In</h2>
               <p className="text-app-muted text-sm mt-1">Connect your account to track polls and voting</p>
             </div>
             <button
@@ -153,4 +178,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       </motion.div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }

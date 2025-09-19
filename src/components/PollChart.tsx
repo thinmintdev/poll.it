@@ -12,6 +12,7 @@ import {
   ArcElement 
 } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
+import type { TooltipItem } from 'chart.js';
 import { CHART_CONFIG } from '@/constants/config';
 
 // Register Chart.js components globally to avoid re-registration
@@ -207,18 +208,35 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
         borderColor: CHART_CONFIG.STYLING.textColor,
         borderWidth: 1,
         callbacks: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          label: function(context: any) {
+          label: function(context: TooltipItem<'doughnut'> | TooltipItem<'bar'>) {
             const label = context.label || '';
-            const value = type === 'bar' ? (context.parsed?.y || context.parsed) : context.parsed;
-            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+            const parsed = context.parsed as unknown;
+            let value = 0;
+            if (typeof parsed === 'number') {
+              value = parsed;
+            } else if (parsed && typeof parsed === 'object' && 'y' in parsed) {
+              const yVal = (parsed as { y?: unknown }).y;
+              if (typeof yVal === 'number') value = yVal;
+            }
+            // Safely coerce dataset values to numbers for summation
+            const dataValues = (context.dataset.data as unknown[]).map(v => {
+              if (typeof v === 'number') return v;
+              if (Array.isArray(v) && typeof v[0] === 'number') return v[0];
+              return 0;
+            });
+            const total = dataValues.reduce((acc: number, n: number) => acc + n, 0);
             const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
             return `${label}: ${value} votes (${percentage}%)`;
           },
           // Add total votes in footer
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          footer: function(tooltipItems: any[]) {
-            const total = tooltipItems[0]?.dataset.data.reduce((a: number, b: number) => a + b, 0) || 0;
+          footer: function(tooltipItems: Array<TooltipItem<'doughnut'> | TooltipItem<'bar'>>) {
+            if (!tooltipItems.length) return '';
+            const raw = tooltipItems[0].dataset.data as unknown[];
+            const total = raw.reduce((acc: number, v: unknown) => {
+              if (typeof v === 'number') return acc + v;
+              if (Array.isArray(v) && typeof v[0] === 'number') return acc + v[0];
+              return acc;
+            }, 0);
             return `Total votes: ${total}`;
           },
         },

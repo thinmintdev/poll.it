@@ -3,6 +3,18 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { query } from '@/lib/database'
 
+interface UpdateSettingsBody {
+  name?: string
+  image?: string | null
+}
+
+interface UserRow {
+  id: string
+  name: string | null
+  email: string | null
+  image: string | null
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -14,8 +26,8 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { name, image } = body
+  const body: UpdateSettingsBody = await request.json()
+  const { name, image } = body
 
     // Validate input
     if (name !== undefined && (typeof name !== 'string' || name.length > 50)) {
@@ -33,8 +45,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Build update query dynamically based on provided fields
-    const updateFields: string[] = []
-    const values: any[] = []
+  const updateFields: string[] = []
+  const values: (string | null)[] = []
     let paramIndex = 1
 
     if (name !== undefined) {
@@ -66,7 +78,7 @@ export async function PATCH(request: NextRequest) {
       RETURNING id, name, email, image
     `
 
-    const result = await query(updateQuery, values)
+  const result = await query(updateQuery, values)
 
     if (result.rows.length === 0) {
       return NextResponse.json(
@@ -75,7 +87,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const updatedUser = result.rows[0]
+  const updatedUser = result.rows[0] as UserRow
 
     return NextResponse.json({
       message: 'Settings updated successfully',
