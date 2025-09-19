@@ -203,9 +203,9 @@ export default function Comments({ pollId, commentsEnabled }: CommentsProps) {
   }
 
   return (
-    <div className="flex flex-col h-full max-h-[500px]">
+    <div className="flex flex-col h-full max-h-[500px] w-full overflow-hidden">
       {/* Comments List */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4 scroll-smooth">
+      <div className="flex-1 overflow-y-auto space-y-4 pb-4 scroll-smooth overflow-x-hidden">
         <AnimatePresence>
           {comments.length === 0 ? (
             <motion.div
@@ -243,7 +243,7 @@ export default function Comments({ pollId, commentsEnabled }: CommentsProps) {
                 </div>
 
                 {/* Comment Content */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold text-app-primary text-sm">
                       {comment.user_name}
@@ -289,7 +289,7 @@ export default function Comments({ pollId, commentsEnabled }: CommentsProps) {
               </div>
 
               {/* Comment Input */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <textarea
                   ref={textareaRef}
                   value={newComment}

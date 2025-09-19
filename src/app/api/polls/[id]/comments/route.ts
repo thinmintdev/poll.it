@@ -221,7 +221,7 @@ export async function POST(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const io = (global as any).io;
       if (io) {
-        const roomName = `poll-${pollId}`;
+        const roomName = `comments-${pollId}`;
         io.to(roomName).emit('newComment', responseComment);
 
         if (process.env.NODE_ENV === 'development') {
