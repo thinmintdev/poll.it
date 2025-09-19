@@ -10,6 +10,7 @@ interface VoteCount {
 interface PollData {
   id: string
   question: string
+  description?: string
   options: string
   created_at: string
   vote_counts: VoteCount[] | null
@@ -105,6 +106,11 @@ export default function PollCard({ poll }: PollCardProps) {
         <h3 className="text-xl font-bold mb-3 text-app-primary group-hover:text-gradient-primary transition-all duration-300 leading-tight">
           {poll.question}
         </h3>
+        {poll.description && (
+          <p className="text-app-secondary text-sm leading-relaxed mb-3 line-clamp-2">
+            {poll.description}
+          </p>
+        )}
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2">
             <div className="flex items-center space-x-1 text-cotton-mint">

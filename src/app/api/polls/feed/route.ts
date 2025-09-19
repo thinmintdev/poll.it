@@ -10,9 +10,10 @@ export async function GET(request: NextRequest) {
 
     // Get polls with their vote counts
     const pollsQuery = `
-      SELECT 
+      SELECT
         p.id,
         p.question,
+        p.description,
         p.options,
         p.created_at,
         (

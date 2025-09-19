@@ -28,6 +28,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body: CreatePollData = await request.json();
     const {
       question,
+      description,
       options,
       pollType = 'text',
       imageOptions,
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Validate required fields and basic constraints
     const validationError = validatePollCreationData({
       question,
+      description,
       options,
       pollType,
       imageOptions,
@@ -68,10 +70,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Insert poll into database with proper error handling
     const result = await query(
       `INSERT INTO polls
-       (id, question, options, poll_type, allow_multiple_selections, max_selections, user_id, comments_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       (id, question, description, options, poll_type, allow_multiple_selections, max_selections, user_id, comments_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [pollId, question, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections, userId, commentsEnabled]
+      [pollId, question, description || null, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections, userId, commentsEnabled]
     );
 
     const poll = result.rows[0];
@@ -142,7 +144,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * @returns Error message if validation fails, null if valid
  */
 function validatePollCreationData(data: CreatePollData): string | null {
-  const { question, options, pollType = 'text', imageOptions, allowMultipleSelections, maxSelections } = data;
+  const { question, description, options, pollType = 'text', imageOptions, allowMultipleSelections, maxSelections } = data;
   
   // Check required fields
   if (!question) {
@@ -152,6 +154,11 @@ function validatePollCreationData(data: CreatePollData): string | null {
   // Validate question length
   if (question.trim().length === 0 || question.length > POLL_CONFIG.MAX_QUESTION_LENGTH) {
     return `Question must be between 1 and ${POLL_CONFIG.MAX_QUESTION_LENGTH} characters`;
+  }
+
+  // Validate description length if provided
+  if (description && description.length > 1000) {
+    return 'Description must be 1000 characters or less';
   }
 
   // Validate poll type

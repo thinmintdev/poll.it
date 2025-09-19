@@ -147,39 +147,59 @@ export default function SimplifiedPollsFeed({
     fetchPolls(pagination.page + 1)
   }, [fetchPolls, pagination.page])
 
-  // Autoscroll functionality
+  // Smooth continuous autoscroll functionality
   useEffect(() => {
     if (!enableInfiniteScroll || polls.length === 0 || userInteracting) return
 
-    const startAutoScroll = () => {
-      autoScrollRef.current = setTimeout(() => {
-        if (scrollContainerRef.current && !userInteracting) {
-          const container = scrollContainerRef.current
-          const scrollAmount = container.scrollHeight * 0.05 // Scroll 10% of content height
+    let animationFrameId: number
+    let startTime: number
 
-          container.scrollBy({
-            top: scrollAmount,
-            behavior: 'smooth'
-          })
+    const smoothScrollStep = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
 
-          // If we've reached the bottom, scroll back to top
-          if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
-            setTimeout(() => {
+      if (scrollContainerRef.current && !userInteracting) {
+        const container = scrollContainerRef.current
+        const elapsed = timestamp - startTime
+
+        // Smooth continuous scrolling - 1 pixel every 50ms (20 pixels per second)
+        const scrollSpeed = 1.2 // Pixels per frame at 60fps
+
+        container.scrollTop += scrollSpeed
+
+        // If we've reached the bottom, smoothly scroll back to top
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 20) {
+          setTimeout(() => {
+            if (container && !userInteracting) {
               container.scrollTo({ top: 0, behavior: 'smooth' })
-            }, 2000)
-          }
-
-          startAutoScroll() // Continue autoscroll
+              // Reset startTime and resume after scroll to top completes
+              setTimeout(() => {
+                if (!userInteracting) {
+                  startTime = 0
+                  animationFrameId = requestAnimationFrame(smoothScrollStep)
+                }
+              }, 1500)
+            }
+          }, 500)
+          return
         }
-      }, 1000) // Scroll every 3 seconds
+
+        // Continue the smooth scroll
+        animationFrameId = requestAnimationFrame(smoothScrollStep)
+      }
     }
 
-    const timer = setTimeout(startAutoScroll, 5000) // Start after 5 seconds
+    // Start immediately after 2 seconds
+    const timer = setTimeout(() => {
+      if (!userInteracting) {
+        startTime = 0
+        animationFrameId = requestAnimationFrame(smoothScrollStep)
+      }
+    }, 2000)
 
     return () => {
       clearTimeout(timer)
-      if (autoScrollRef.current) {
-        clearTimeout(autoScrollRef.current)
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
       }
     }
   }, [polls.length, userInteracting, enableInfiniteScroll])
@@ -189,9 +209,6 @@ export default function SimplifiedPollsFeed({
     return () => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
-      }
-      if (autoScrollRef.current) {
-        clearTimeout(autoScrollRef.current)
       }
     }
   }, [])
@@ -320,6 +337,7 @@ export default function SimplifiedPollsFeed({
           onTouchEnd={() => setTimeout(() => setUserInteracting(false), 2000)}
           onScroll={() => {
             setUserInteracting(true)
+            // Reset user interaction after 3 seconds of no scrolling
             if (autoScrollRef.current) clearTimeout(autoScrollRef.current)
             autoScrollRef.current = setTimeout(() => setUserInteracting(false), 3000)
           }}

@@ -343,6 +343,13 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
             <div className="flex items-center space-x-1 text-cotton-mint text-sm">
             </div>
           </div>
+          {poll?.description && (
+            <div className="mb-6 max-w-4xl mx-auto">
+              <p className="text-app-secondary text-lg leading-relaxed text-center">
+                {poll.description}
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-center space-x-6 text-app-secondary">
             <div className="flex items-center space-x-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

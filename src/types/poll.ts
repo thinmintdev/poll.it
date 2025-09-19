@@ -1,6 +1,7 @@
 export interface Poll {
   id: string
   question: string
+  description?: string
   options: string[]
   poll_type?: 'text' | 'image'
   image_options?: PollImageOption[]
@@ -38,6 +39,7 @@ export interface PollResults {
 
 export interface CreatePollData {
   question: string
+  description?: string
   options: string[]
   pollType?: 'text' | 'image'
   imageOptions?: CreateImageOption[]

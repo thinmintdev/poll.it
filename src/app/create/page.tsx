@@ -9,6 +9,8 @@ import ImagePollCreator from '@/components/ImagePollCreator'
 
 export default function CreatePoll() {
   const [question, setQuestion] = useState('')
+  const [description, setDescription] = useState('')
+  const [showDescription, setShowDescription] = useState(false)
   const [options, setOptions] = useState(['', ''])
   const [imageOptions, setImageOptions] = useState<CreateImageOption[]>([
     { imageUrl: '', caption: '' },
@@ -75,6 +77,7 @@ export default function CreatePoll() {
     try {
       const pollData: CreatePollData = {
         question: question.trim(),
+        description: description.trim() || undefined,
         pollType,
         options: pollType === 'text' ? options : [], // Empty array for image polls
         allowMultipleSelections,
@@ -212,7 +215,61 @@ export default function CreatePoll() {
               </div>
             </motion.div>
 
-            
+            {/* Description Section - Expandable */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-app-primary text-sm font-semibold">
+                  Description (Optional)
+                </label>
+                <motion.button
+                  type="button"
+                  onClick={() => setShowDescription(!showDescription)}
+                  className="text-cotton-purple text-sm font-medium hover:text-cotton-pink transition-colors duration-200 flex items-center gap-1"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      showDescription ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {showDescription ? 'Hide' : 'Add'} Description
+                </motion.button>
+              </div>
+
+              {showDescription && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative group"
+                >
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Add a description to provide more context for your poll..."
+                    className="input-field w-full min-h-[100px] resize-y group-hover:shadow-lg group-hover:shadow-cotton-blue/10 transition-all duration-300"
+                    maxLength={1000}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-cotton-blue/5 via-cotton-purple/5 to-cotton-pink/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-app-muted">Provide additional context or instructions for voters</span>
+                    <span className="text-xs text-app-muted">{description.length}/1000</span>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+
             {/* Poll Content - Conditional based on type */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -289,7 +346,7 @@ export default function CreatePoll() {
               )}
 
               {/* Multiple Selections Toggle - shown for both types */}
-              <div className="flex items-center justify-center gap-3 mt-6 pt-6 border-t border-app">
+              <div className="flex items-center justify-between gap-3 mt-6 pt-6 border-t border-app">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -345,7 +402,7 @@ export default function CreatePoll() {
               </div>
 
               {/* Comments Toggle */}
-              <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-app">
+              <div className="flex flex-col items-start gap-2 mt-4 pt-4 border-t border-app">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
