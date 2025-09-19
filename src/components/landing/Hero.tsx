@@ -23,19 +23,29 @@ const Hero: React.FC = () => {
               <HomeHeroBars />
             </div>
             <motion.p
-              className="text-lg md:text-xl lg:text-2xl text-app-secondary leading-relaxed max-w-2xl"
+              className="text-lg md:text-xl lg:text-2xl text-app-secondary leading-relaxed max-w-2xl px-4 sm:px-0"
               initial={{opacity:0, y:18}}
               animate={{opacity:1, y:0}}
               transition={{duration:0.65, delay:0.15}}
             >Create a poll in seconds and watch the collective pulse update instantly. Built for communities, teams, streams & events.</motion.p>
             <motion.div
-              className="mt-10 flex flex-col sm:flex-row gap-5"
+              className="mt-10 flex flex-col sm:flex-row gap-5 items-center sm:items-start lg:justify-left sm:justify-center w-full"
               initial={{opacity:0, y:18}}
               animate={{opacity:1, y:0}}
               transition={{duration:0.65, delay:0.3}}
             >
-              <Link href="#create" className="btn-primary inline-flex justify-center min-w-[170px] text-base">Start Free</Link>
-              <Link href="#features" className="btn-secondary inline-flex justify-center min-w-[170px] text-base">See Features</Link>
+              <Link href="#feed" className="btn-primary inline-flex items-center justify-center gap-2 min-w-[170px] text-base">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Live Feed
+              </Link>
+              <Link href="#features" className="btn-secondary inline-flex items-center justify-center gap-2 min-w-[170px] text-base">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                See Features
+              </Link>
             </motion.div>
           </div>
           <div className="relative w-full">

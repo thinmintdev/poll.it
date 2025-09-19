@@ -50,8 +50,7 @@ const Header: React.FC = () => {
             {session && (
               <NavLink href="/dashboard" label="Dashboard" />
             )}
-            <NavLink href="/create" label="Create Poll" />
-            <NavLink href="/#feed" label="Live Feed" />
+            
           </nav>
 
           {/* CTA Buttons / Auth */}
