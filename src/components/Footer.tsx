@@ -29,7 +29,7 @@ const Footer: React.FC = () => {
               </Link>
               <span className="text-app-muted text-sm">
                 © {currentYear} All rights reserved.<br />
-                <span className="text-app-secondary">Made with ❤️ by <a className="text-cotton-mint" href='#'>thinmint.dev</a></span>
+                <span className="text-purple-400">Made with ❤️ by <a className="text-indigo-500" href='https://talaat.dev'>talaat.dev</a></span>
               </span>
             </div>
 

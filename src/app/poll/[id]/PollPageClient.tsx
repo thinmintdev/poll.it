@@ -7,7 +7,7 @@ import Comments from '@/components/Comments'
 import { Poll } from '@/types/poll'
 import { useEffect, useState } from 'react'
 import { useAnalytics } from '@/hooks/useAnalytics'
-import io from 'socket.io-client'
+import io, { Socket } from 'socket.io-client'
 
 interface Result {
   votes: number
@@ -99,52 +99,80 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
 
     fetchPollAndResults()
 
-    // Initialize Socket.IO with enhanced error handling and reconnection
-    const socket = io({
-      path: '/api/socket',
-      timeout: 10000,
-      forceNew: true,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      transports: ['polling', 'websocket']
-    })
+    // Initialize Socket.IO server first, then connect client
+    const initializeSocket = async () => {
+      try {
+        // First, ensure the Socket.IO server is initialized
+        await fetch('/api/socket')
+      } catch (error) {
+        console.warn('Failed to initialize Socket.IO server:', error)
+      }
 
-    socket.on('connect', () => {
-      console.log('Connected to socket server')
-      socket.emit('join-poll', id)
-    })
+      // Initialize Socket.IO client with enhanced error handling and reconnection
+      const socket = io({
+        path: '/api/socket',
+        timeout: 10000,
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+        transports: ['polling', 'websocket']
+      })
 
-    socket.on('disconnect', (reason) => {
-      console.log('Disconnected from socket server:', reason)
-    })
+      return socket
+    }
 
-    socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error)
-    })
+    const setupSocket = async () => {
+      const socket = await initializeSocket()
 
-    socket.on('reconnect', (attempt) => {
-      console.log('Reconnected to socket server on attempt:', attempt)
-      socket.emit('join-poll', id) // Rejoin poll room on reconnection
-    })
+      socket.on('connect', () => {
+        console.log('Connected to socket server')
+        socket.emit('join-poll', id)
+      })
 
-    socket.on('pollResults', (newResults: Results) => {
-      console.log('Received poll results update:', newResults)
-      setResults(newResults)
-      setLastResultsFetch(Date.now()) // Track when results were updated via Socket.IO
-    })
+      socket.on('disconnect', (reason) => {
+        console.log('Disconnected from socket server:', reason)
+      })
 
-    socket.on('joined-poll', (data) => {
-      console.log('Successfully joined poll room:', data)
-    })
+      socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error)
+      })
 
-    socket.on('error', (errorMessage: string) => {
-      console.error('Socket error:', errorMessage)
-      setError(errorMessage)
+      socket.on('reconnect', (attempt) => {
+        console.log('Reconnected to socket server on attempt:', attempt)
+        socket.emit('join-poll', id) // Rejoin poll room on reconnection
+      })
+
+      socket.on('pollResults', (newResults: Results) => {
+        console.log('Received poll results update:', newResults)
+        setResults(newResults)
+        setLastResultsFetch(Date.now()) // Track when results were updated via Socket.IO
+      })
+
+      socket.on('joined-poll', (data) => {
+        console.log('Successfully joined poll room:', data)
+      })
+
+      socket.on('error', (errorMessage: string) => {
+        console.error('Socket error:', errorMessage)
+        setError(errorMessage)
+      })
+
+      return socket
+    }
+
+    // Setup socket and return cleanup function
+    let socket: Socket | null = null
+    setupSocket().then((socketInstance) => {
+      socket = socketInstance
+    }).catch((error) => {
+      console.error('Failed to setup Socket.IO:', error)
     })
 
     return () => {
-      socket.disconnect()
+      if (socket) {
+        socket.disconnect()
+      }
     }
   }, [id, forceResults])
 

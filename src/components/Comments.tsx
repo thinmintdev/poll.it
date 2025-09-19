@@ -334,7 +334,7 @@ export default function Comments({ pollId, commentsEnabled }: CommentsProps) {
           </form>
         ) : (
           <div className="text-center py-4">
-            <p className="text-app-muted text-sm mb-3">Sign in to join the conversation</p>
+            <p className="text-app-muted text-sm mb-3"><a href="/auth/signin">s</a>Sign in to join the conversation</p>
             <button
               onClick={() => window.location.href = '/auth/signin'}
               className="btn-secondary text-sm"
