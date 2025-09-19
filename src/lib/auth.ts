@@ -69,6 +69,24 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.sub) {
         session.user.id = token.sub as string
         session.user.provider = token.provider as string
+
+        // Fetch current user data from database to ensure latest profile info
+        try {
+          const userData = await query(
+            'SELECT name, email, image FROM users WHERE id = $1',
+            [token.sub]
+          )
+
+          if (userData.rows.length > 0) {
+            const user = userData.rows[0]
+            session.user.name = user.name
+            session.user.email = user.email
+            session.user.image = user.image
+          }
+        } catch (error) {
+          console.error('Error fetching user data for session:', error)
+          // Fallback to token data if database fetch fails
+        }
       }
       return session
     },

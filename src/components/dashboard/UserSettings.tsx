@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { User } from 'next-auth'
+import { useSession } from 'next-auth/react'
 
 interface UserSettingsProps {
   user: User
 }
 
 export default function UserSettings({ user }: UserSettingsProps) {
+  const { update } = useSession()
   const [displayName, setDisplayName] = useState(user.name || '')
   const [avatarUrl, setAvatarUrl] = useState(user.image || '')
   const [isLoading, setIsLoading] = useState(false)
@@ -32,10 +34,13 @@ export default function UserSettings({ user }: UserSettingsProps) {
 
       if (response.ok) {
         setMessage({ type: 'success', text: 'Settings updated successfully!' })
-        // Refresh the page to update the session
+        // Update the session with new data
+        await update()
+
+        // Clear the success message after a delay
         setTimeout(() => {
-          window.location.reload()
-        }, 1500)
+          setMessage(null)
+        }, 3000)
       } else {
         throw new Error('Failed to update settings')
       }
