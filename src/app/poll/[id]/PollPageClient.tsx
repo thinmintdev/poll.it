@@ -3,6 +3,7 @@ import Link from 'next/link'
 import PollChart from '@/components/PollChart'
 import ShareModal from '@/components/ShareModal'
 import ImagePollVoting from '@/components/ImagePollVoting'
+import Comments from '@/components/Comments'
 import { Poll } from '@/types/poll'
 import { useEffect, useState } from 'react'
 import { useAnalytics } from '@/hooks/useAnalytics'
@@ -35,6 +36,7 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
   const [actuallyVoted, setActuallyVoted] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [chartType, setChartType] = useState<'doughnut' | 'bar'>('doughnut')
+  const [lastResultsFetch, setLastResultsFetch] = useState<number>(0)
   const { trackVote, trackShare } = useAnalytics()
 
   useEffect(() => {
@@ -129,6 +131,7 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
     socket.on('pollResults', (newResults: Results) => {
       console.log('Received poll results update:', newResults)
       setResults(newResults)
+      setLastResultsFetch(Date.now()) // Track when results were updated via Socket.IO
     })
 
     socket.on('joined-poll', (data) => {
@@ -145,32 +148,78 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
     }
   }, [id, forceResults])
 
+  // Mobile-friendly polling fallback for results
+  useEffect(() => {
+    if (!hasVoted || !actuallyVoted) return
+
+    const refreshResults = async () => {
+      try {
+        const resultsRes = await fetch(`/api/polls/${id}/results`)
+        if (resultsRes.ok) {
+          const freshResults = await resultsRes.json()
+          setResults(freshResults)
+          setLastResultsFetch(Date.now())
+        }
+      } catch (error) {
+        console.warn('Failed to refresh results:', error)
+      }
+    }
+
+    // Immediate refresh when transitioning to results view
+    refreshResults()
+
+    // Set up polling for mobile devices where Socket.IO might be unreliable
+    const interval = setInterval(() => {
+      if (Date.now() - lastResultsFetch > 5000) { // Only if no recent Socket.IO update
+        refreshResults()
+      }
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [hasVoted, actuallyVoted, id, lastResultsFetch])
+
   const handleVote = async () => {
     const isMultiple = poll?.allow_multiple_selections
     const optionsToVote = isMultiple ? selectedOptions : (selectedOption !== null ? [selectedOption] : [])
-    
+
     if (optionsToVote.length === 0) return
-    
+
     setVoting(true)
     setError(null)
     try {
       const response = await fetch(`/api/polls/${id}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          optionIndex: poll?.allow_multiple_selections ? optionsToVote : optionsToVote[0] 
+        body: JSON.stringify({
+          optionIndex: poll?.allow_multiple_selections ? optionsToVote : optionsToVote[0]
         }),
       })
       const data = await response.json()
       if (!response.ok) {
         throw new Error(data.error || 'Failed to vote')
       }
-      
+
       // Track vote for analytics
       trackVote(id)
 
-      setHasVoted(true)
+      // Set voting state immediately but wait for results update
       setActuallyVoted(true)
+
+      // Wait briefly for Socket.IO results update before showing results view
+      // This ensures mobile users see updated results immediately
+      setTimeout(async () => {
+        // Fetch latest results as fallback in case Socket.IO update hasn't arrived
+        try {
+          const resultsRes = await fetch(`/api/polls/${id}/results`)
+          if (resultsRes.ok) {
+            const latestResults = await resultsRes.json()
+            setResults(latestResults)
+          }
+        } catch (error) {
+          console.warn('Failed to fetch latest results after voting:', error)
+        }
+        setHasVoted(true)
+      }, 100)
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
@@ -565,9 +614,20 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
                   <svg className="w-6 h-6 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                  <span className="text-app-primary font-semibold text-lg">Feed</span>
+                  <span className="text-app-primary font-semibold text-lg">
+                    {poll?.comments_enabled ? 'Discussion' : 'Feed'}
+                  </span>
+                  {poll?.comments_enabled && (
+                    <div className="flex items-center gap-1 text-xs text-cotton-mint">
+                      <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+                      <span>Live Chat</span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-app-muted text-sm">Comments are disabled for this poll.</p>
+                <Comments
+                  pollId={id}
+                  commentsEnabled={poll?.comments_enabled || false}
+                />
               </div>
             </div>
           )}

@@ -6,6 +6,7 @@ export interface Poll {
   image_options?: PollImageOption[]
   allow_multiple_selections?: boolean
   max_selections?: number
+  comments_enabled?: boolean
   created_at: string
   updated_at: string
 }
@@ -42,6 +43,7 @@ export interface CreatePollData {
   imageOptions?: CreateImageOption[]
   allowMultipleSelections?: boolean
   maxSelections?: number
+  commentsEnabled?: boolean
 }
 
 export interface CreateImageOption {
@@ -51,4 +53,22 @@ export interface CreateImageOption {
 
 export interface VoteData {
   optionIndex: number | number[]
+}
+
+export interface Comment {
+  id: string
+  poll_id: string
+  user_id: string
+  user_name: string
+  user_image?: string
+  content: string
+  parent_id?: string
+  is_edited: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateCommentData {
+  content: string
+  parent_id?: string
 }

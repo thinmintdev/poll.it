@@ -103,19 +103,44 @@ function setupSocketEventHandlers(io: Server): void {
           socket.emit('error', 'Invalid poll ID format');
           return;
         }
-        
+
         const roomName = `${SOCKET_CONFIG.POLL_ROOM_PREFIX}${pollId}`;
         socket.join(roomName);
-        
+
         if (process.env.NODE_ENV === 'development') {
           console.log(`Client ${socket.id} joined ${roomName}`);
         }
-        
+
         // Confirm successful join
         socket.emit('joined-poll', { pollId, roomName });
       } catch (error) {
         console.error(`Error joining poll ${pollId}:`, error);
         socket.emit('error', 'Failed to join poll');
+      }
+    });
+
+    /**
+     * Handle client joining a comments room for real-time chat
+     * Separate from poll room to allow granular control over comment updates
+     */
+    socket.on('join-comments', (pollId: string) => {
+      try {
+        if (!isValidPollId(pollId)) {
+          socket.emit('error', 'Invalid poll ID format');
+          return;
+        }
+
+        const commentsRoomName = `comments-${pollId}`;
+        socket.join(commentsRoomName);
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Client ${socket.id} joined comments room ${commentsRoomName}`);
+        }
+
+        socket.emit('joined-comments', { pollId, roomName: commentsRoomName });
+      } catch (error) {
+        console.error(`Error joining comments for poll ${pollId}:`, error);
+        socket.emit('error', 'Failed to join comments');
       }
     });
 
@@ -128,15 +153,36 @@ function setupSocketEventHandlers(io: Server): void {
         if (!isValidPollId(pollId)) {
           return; // Silently ignore invalid poll IDs on leave
         }
-        
+
         const roomName = `${SOCKET_CONFIG.POLL_ROOM_PREFIX}${pollId}`;
         socket.leave(roomName);
-        
+
         if (process.env.NODE_ENV === 'development') {
           console.log(`Client ${socket.id} left ${roomName}`);
         }
       } catch (error) {
         console.error(`Error leaving poll ${pollId}:`, error);
+      }
+    });
+
+    /**
+     * Handle client leaving a comments room
+     * Cleans up comments room membership when client navigates away
+     */
+    socket.on('leave-comments', (pollId: string) => {
+      try {
+        if (!isValidPollId(pollId)) {
+          return; // Silently ignore invalid poll IDs on leave
+        }
+
+        const commentsRoomName = `comments-${pollId}`;
+        socket.leave(commentsRoomName);
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Client ${socket.id} left comments room ${commentsRoomName}`);
+        }
+      } catch (error) {
+        console.error(`Error leaving comments for poll ${pollId}:`, error);
       }
     });
 

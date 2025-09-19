@@ -32,7 +32,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       pollType = 'text',
       imageOptions,
       allowMultipleSelections = POLL_CONFIG.DEFAULT_ALLOW_MULTIPLE,
-      maxSelections = POLL_CONFIG.DEFAULT_MAX_SELECTIONS
+      maxSelections = POLL_CONFIG.DEFAULT_MAX_SELECTIONS,
+      commentsEnabled = false
     } = body;
 
     console.log('Received poll data:', {
@@ -67,10 +68,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Insert poll into database with proper error handling
     const result = await query(
       `INSERT INTO polls
-       (id, question, options, poll_type, allow_multiple_selections, max_selections, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       (id, question, options, poll_type, allow_multiple_selections, max_selections, user_id, comments_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [pollId, question, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections, userId]
+      [pollId, question, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections, userId, commentsEnabled]
     );
 
     const poll = result.rows[0];

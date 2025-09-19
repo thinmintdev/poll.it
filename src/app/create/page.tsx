@@ -19,6 +19,7 @@ export default function CreatePoll() {
   const [error, setError] = useState('')
   const [allowMultipleSelections, setAllowMultipleSelections] = useState(false)
   const [maxSelections, setMaxSelections] = useState(2)
+  const [commentsEnabled, setCommentsEnabled] = useState(false)
   const router = useRouter()
   const { trackPollCreation } = useAnalytics()
 
@@ -77,7 +78,8 @@ export default function CreatePoll() {
         pollType,
         options: pollType === 'text' ? options : [], // Empty array for image polls
         allowMultipleSelections,
-        maxSelections: allowMultipleSelections ? maxSelections : 1
+        maxSelections: allowMultipleSelections ? maxSelections : 1,
+        commentsEnabled
       }
 
       if (pollType === 'text') {
@@ -289,14 +291,14 @@ export default function CreatePoll() {
               {/* Multiple Selections Toggle - shown for both types */}
               <div className="flex items-center justify-center gap-3 mt-6 pt-6 border-t border-app">
                 <div className="flex items-center gap-2">
-                  <input 
-                    type="checkbox" 
-                    id="allowMultiple" 
+                  <input
+                    type="checkbox"
+                    id="allowMultiple"
                     checked={allowMultipleSelections}
                     onChange={(e) => setAllowMultipleSelections(e.target.checked)}
                     className="sr-only"
                   />
-                  <div 
+                  <div
                     className={`w-10 h-5 rounded-full transition-colors duration-200 cursor-pointer ${
                       allowMultipleSelections ? 'bg-cotton-purple' : 'bg-app-surface'
                     }`}
@@ -310,7 +312,7 @@ export default function CreatePoll() {
                     Allow Multiple Selections
                   </label>
                 </div>
-                
+
                 {/* Max Selections Counter */}
                 {allowMultipleSelections && (
                   <div className="flex items-center gap-2 bg-app-surface rounded-lg px-3 py-1">
@@ -329,7 +331,7 @@ export default function CreatePoll() {
                     <button
                       type="button"
                       onClick={() => setMaxSelections(Math.min(
-                        pollType === 'text' ? options.length : imageOptions.length, 
+                        pollType === 'text' ? options.length : imageOptions.length,
                         maxSelections + 1
                       ))}
                       className="w-6 h-6 bg-cotton-purple/20 hover:bg-cotton-purple/30 rounded-full flex items-center justify-center text-cotton-purple transition-colors"
@@ -340,6 +342,38 @@ export default function CreatePoll() {
                     </button>
                   </div>
                 )}
+              </div>
+
+              {/* Comments Toggle */}
+              <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-app">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="commentsEnabled"
+                    checked={commentsEnabled}
+                    onChange={(e) => setCommentsEnabled(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-10 h-5 rounded-full transition-colors duration-200 cursor-pointer ${
+                      commentsEnabled ? 'bg-cotton-blue' : 'bg-app-surface'
+                    }`}
+                    onClick={() => setCommentsEnabled(!commentsEnabled)}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${
+                      commentsEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    } translate-y-0.5`}></div>
+                  </div>
+                  <label htmlFor="commentsEnabled" className="text-sm text-app-muted font-medium cursor-pointer">
+                    Enable Comments & Discussion
+                  </label>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-app-muted">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span>Logged in users only</span>
+                </div>
               </div>
             </motion.div>
 
