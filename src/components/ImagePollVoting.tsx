@@ -255,6 +255,34 @@ export default function ImagePollVoting({
   }
 
   // Results Interface
+  if (results === null) {
+    // Results are hidden due to hide_results setting
+    return (
+      <div className="text-center py-8">
+        <div className="text-cotton-mint mb-4">
+          <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L12 12m7.758-1.758l4.242 4.242" />
+          </svg>
+        </div>
+        <h3 className="text-app-primary text-xl font-semibold mb-2">Results Hidden</h3>
+        <p className="text-app-secondary mb-6">
+          {poll?.hide_results === 'entirely'
+            ? 'Only the poll creator can view these results.'
+            : 'Vote to see the results!'
+          }
+        </p>
+        {!actuallyVoted && (
+          <button
+            className="btn-secondary"
+            onClick={onBackToPoll}
+          >
+            Back to Poll
+          </button>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -265,7 +293,7 @@ export default function ImagePollVoting({
           const isSelected = selectedOptions.includes(index)
           const colorTheme = getCottonColor(index)
           const hasError = imageLoadErrors.has(index)
-          
+
           return (
             <motion.div
               key={index}
@@ -283,7 +311,7 @@ export default function ImagePollVoting({
                   background: `linear-gradient(135deg, ${colorTheme.accent}15, ${colorTheme.accent}05)`
                 }}
               />
-              
+
               {/* Image Container */}
               <div className="relative overflow-hidden rounded-xl bg-app-surface aspect-video">
                 {/* Error State */}
@@ -304,20 +332,20 @@ export default function ImagePollVoting({
                     onError={() => handleImageError(index)}
                   />
                 )}
-                
+
                 {/* Results Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                
+
                 {/* Vote Count Badge */}
                 <div className="absolute top-3 right-3">
-                  <div 
+                  <div
                     className="px-3 py-1 rounded-full text-white font-bold text-sm backdrop-blur-sm"
                     style={{ backgroundColor: `${colorTheme.accent}90` }}
                   >
                     {voteCount} vote{voteCount !== 1 ? 's' : ''}
                   </div>
                 </div>
-                
+
                 {/* Selection Indicator */}
                 {isSelected && (
                   <div className="absolute top-3 left-3">
@@ -328,7 +356,7 @@ export default function ImagePollVoting({
                     </div>
                   </div>
                 )}
-                
+
                 {/* Caption and Percentage */}
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <div className="flex justify-between items-end">
@@ -340,7 +368,7 @@ export default function ImagePollVoting({
                       )}
                     </div>
                     <div className="text-right">
-                      <div 
+                      <div
                         className="text-2xl font-bold text-white drop-shadow-lg"
                         style={{ color: colorTheme.accent }}
                       >
@@ -350,7 +378,7 @@ export default function ImagePollVoting({
                   </div>
                 </div>
               </div>
-              
+
               {/* Progress Bar */}
               <div className="mt-3">
                 <div className="w-full bg-app-surface rounded-full h-2 overflow-hidden">
@@ -362,7 +390,7 @@ export default function ImagePollVoting({
                     transition={{ duration: 1, ease: "easeOut", delay: index * 0.1 }}
                   >
                     {percent > 0 && (
-                      <div 
+                      <div
                         className="absolute inset-0 rounded-full opacity-50"
                         style={{
                           background: `linear-gradient(90deg, transparent, ${colorTheme.accent}60)`,
@@ -377,11 +405,11 @@ export default function ImagePollVoting({
           )
         })}
       </div>
-      
+
       <p className="text-app-muted text-sm mb-6 text-center">
         Total votes: {results?.totalVotes || 0}
       </p>
-      
+
       {!actuallyVoted && (
         <div className="flex items-center gap-4">
           <button
@@ -392,7 +420,7 @@ export default function ImagePollVoting({
           </button>
         </div>
       )}
-      
+
       {/* Shimmer animation styles */}
       <style jsx>{`
         @keyframes shimmer {

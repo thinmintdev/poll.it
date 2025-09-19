@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "DeepGraph Next.js MCP": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-code-graph@latest",
+        "vercel/next.js"
+      ]
+    }
+  }
+}

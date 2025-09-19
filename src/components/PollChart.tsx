@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -30,12 +30,12 @@ ChartJS.register(
  * Props interface for the PollChart component
  */
 interface PollChartProps {
-  /** Array of poll results with options, votes, and percentages */
+  /** Array of poll results with options, votes, and percentages, or null when results are hidden */
   results: {
     option: string;
     votes: number;
     percentage: number;
-  }[];
+  }[] | null;
   /** Chart type - either doughnut (default) or bar chart */
   type?: 'doughnut' | 'bar';
 }
@@ -119,8 +119,9 @@ const getCottonColors = () => {
  * - Interactive tooltips with vote counts and percentages
  * - Optimized re-rendering using React refs
  * - Support for up to 10 poll options with distinct colors
+ * - Graceful handling of hidden results with appropriate messaging
  *
- * @param results - Array of poll results to visualize
+ * @param results - Array of poll results to visualize, or null when results are hidden
  * @param type - Chart type ('doughnut' or 'bar')
  * @returns JSX element containing the chart
  */
@@ -134,13 +135,15 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
   const borderColors = cottonColors.map(color => color.border);
 
   // Filter out any invalid results and ensure we have valid data
-  const validResults = results.filter(result =>
-    result &&
-    typeof result.option === 'string' &&
-    result.option.trim() !== '' &&
-    typeof result.votes === 'number' &&
-    !isNaN(result.votes)
-  );
+  const validResults = useMemo(() => {
+    return results ? results.filter(result =>
+      result &&
+      typeof result.option === 'string' &&
+      result.option.trim() !== '' &&
+      typeof result.votes === 'number' &&
+      !isNaN(result.votes)
+    ) : [];
+  }, [results]);
 
   // Force chart update when data changes for live updates
   useEffect(() => {
@@ -153,6 +156,34 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
       }
     }
   }, [validResults]);
+
+  // Handle null results when poll results are hidden
+  if (results === null) {
+    return (
+      <div className={`${CHART_CONFIG.HEIGHT} w-full flex items-center justify-center`}>
+        <div className="text-center text-gray-400">
+          <div className="mb-3">
+            <svg
+              className="w-12 h-12 mx-auto opacity-50"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L18 2.5m-8.122 7.378a3 3 0 104.243 4.243M9.878 9.878L2.5 18"
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-medium mb-1">Results Hidden</p>
+          <p className="text-xs opacity-75">Poll results are currently not visible</p>
+        </div>
+      </div>
+    );
+  }
 
   // If no valid results, show empty state
   if (validResults.length === 0) {
@@ -293,7 +324,7 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
           data={data} 
           options={options}
           // Accessibility attributes
-          aria-label={`Poll results doughnut chart showing ${results.length} options`}
+          aria-label={`Poll results doughnut chart showing ${validResults.length} options`}
           role="img"
         />
       ) : (
@@ -301,7 +332,7 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
           data={data} 
           options={options}
           // Accessibility attributes
-          aria-label={`Poll results bar chart showing ${results.length} options`}
+          aria-label={`Poll results bar chart showing ${validResults.length} options`}
           role="img"
         />
       )}

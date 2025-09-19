@@ -59,6 +59,11 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
         if (resultsRes.ok) {
           const resultsData = await resultsRes.json()
           setResults(resultsData)
+        } else if (resultsRes.status === 403) {
+          // Results are hidden - this is expected behavior
+          const errorData = await resultsRes.json()
+          console.log('Results hidden:', errorData.error)
+          setResults(null)
         }
 
         // Check if user has voted and set initial state
@@ -188,6 +193,11 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
           const freshResults = await resultsRes.json()
           setResults(freshResults)
           setLastResultsFetch(Date.now())
+        } else if (resultsRes.status === 403) {
+          // Results are hidden - this might happen if poll creator changes settings
+          const errorData = await resultsRes.json()
+          console.log('Results hidden during refresh:', errorData.error)
+          setResults(null)
         }
       } catch (error) {
         console.warn('Failed to refresh results:', error)
@@ -243,6 +253,11 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
           if (resultsRes.ok) {
             const latestResults = await resultsRes.json()
             setResults(latestResults)
+          } else if (resultsRes.status === 403) {
+            // Results are hidden even after voting - handle gracefully
+            const errorData = await resultsRes.json()
+            console.log('Results hidden after voting:', errorData.error)
+            setResults(null)
           }
         } catch (error) {
           console.warn('Failed to fetch latest results after voting:', error)
@@ -503,7 +518,7 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
                         </div>
                       )}
                     </div>
-                  ) : (
+                  ) : results ? (
                     <div>
                       <div className="space-y-4 mb-6">
                         {poll?.options.map((option, index) => {
@@ -582,6 +597,30 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
                         </button>
                       </div>
                     </div>
+                  ) : (
+                    /* Results are hidden */
+                    <div className="text-center py-8">
+                      <div className="text-cotton-mint mb-4">
+                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L12 12m7.758-1.758l4.242 4.242" />
+                        </svg>
+                      </div>
+                      <h3 className="text-app-primary text-xl font-semibold mb-2">Results Hidden</h3>
+                      <p className="text-app-secondary mb-6">
+                        {poll?.hide_results === 'entirely'
+                          ? 'Only the poll creator can view these results.'
+                          : 'Vote to see the results!'
+                        }
+                      </p>
+                      {!actuallyVoted && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => setHasVoted(false)}
+                        >
+                          Back to Poll
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -632,7 +671,7 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
                 {/* Stats Panel */}
                 <PollStats
                   pollId={id}
-                  totalVotes={results?.totalVotes || 0}
+                  results={results}
                   views={1234} // TODO: Implement view tracking
                   shares={89}  // TODO: Implement share tracking
                   isLive={true}

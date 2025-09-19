@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { CreatePollData, CreateImageOption } from '@/types/poll'
 import { useAnalytics } from '@/hooks/useAnalytics'
 import ImagePollCreator from '@/components/ImagePollCreator'
+import { useSession } from 'next-auth/react'
 
 export default function CreatePoll() {
   const [question, setQuestion] = useState('')
@@ -22,8 +23,10 @@ export default function CreatePoll() {
   const [allowMultipleSelections, setAllowMultipleSelections] = useState(false)
   const [maxSelections, setMaxSelections] = useState(2)
   const [commentsEnabled, setCommentsEnabled] = useState(false)
+  const [hideResults, setHideResults] = useState<'none' | 'until_vote' | 'entirely'>('none')
   const router = useRouter()
   const { trackPollCreation } = useAnalytics()
+  const { data: session } = useSession()
 
   const addOption = () => {
     if (options.length < 10) {
@@ -55,6 +58,13 @@ export default function CreatePoll() {
       return
     }
 
+    // Validate hide results setting
+    if (hideResults === 'entirely' && !session) {
+      setError('You must be logged in to create polls with entirely hidden results')
+      setLoading(false)
+      return
+    }
+
     // Validate based on poll type
     if (pollType === 'text') {
       const validOptions = options.filter(opt => opt.trim() !== '')
@@ -82,7 +92,8 @@ export default function CreatePoll() {
         options: pollType === 'text' ? options : [], // Empty array for image polls
         allowMultipleSelections,
         maxSelections: allowMultipleSelections ? maxSelections : 1,
-        commentsEnabled
+        commentsEnabled,
+        hideResults
       }
 
       if (pollType === 'text') {
@@ -431,6 +442,112 @@ export default function CreatePoll() {
                   </svg>
                   <span>Logged in users only</span>
                 </div>
+              </div>
+
+              {/* Hide Results Toggle */}
+              <div className="flex flex-col items-start gap-3 mt-4 pt-4 border-t border-app">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="hideResults"
+                    checked={hideResults !== 'none'}
+                    onChange={(e) => setHideResults(e.target.checked ? 'until_vote' : 'none')}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-10 h-5 rounded-full transition-colors duration-200 cursor-pointer ${
+                      hideResults !== 'none' ? 'bg-cotton-mint' : 'bg-app-surface'
+                    }`}
+                    onClick={() => setHideResults(hideResults !== 'none' ? 'none' : 'until_vote')}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-200 transform ${
+                      hideResults !== 'none' ? 'translate-x-5' : 'translate-x-0.5'
+                    } translate-y-0.5`}></div>
+                  </div>
+                  <label htmlFor="hideResults" className="text-sm text-app-muted font-medium cursor-pointer">
+                    Hide Results
+                  </label>
+                </div>
+
+                {/* Hide Results Options - Tabbed Choice */}
+                {hideResults !== 'none' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="ml-6"
+                  >
+                    {/* Tabbed Choice Selector */}
+                    <div className="flex bg-app-surface rounded-lg p-1 mb-3 border border-app">
+                      <motion.button
+                        type="button"
+                        onClick={() => setHideResults('until_vote')}
+                        className={`flex-1 px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                          hideResults === 'until_vote'
+                            ? 'bg-white text-cotton-mint shadow-sm border border-cotton-mint/20'
+                            : 'text-app-secondary hover:text-app-primary'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Until Vote
+                      </motion.button>
+                      <motion.button
+                        type="button"
+                        onClick={() => session && setHideResults('entirely')}
+                        disabled={!session}
+                        className={`flex-1 px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                          !session
+                            ? 'text-app-muted cursor-not-allowed opacity-50'
+                            : hideResults === 'entirely'
+                            ? 'bg-white text-cotton-mint shadow-sm border border-cotton-mint/20'
+                            : 'text-app-secondary hover:text-app-primary'
+                        }`}
+                        whileHover={session ? { scale: 1.02 } : {}}
+                        whileTap={session ? { scale: 0.98 } : {}}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                        Entirely
+                        {!session && <span className="text-cotton-orange text-[10px]">⚠</span>}
+                      </motion.button>
+                    </div>
+
+                    {/* Descriptions */}
+                    <div className="space-y-1 text-xs text-app-muted">
+                      <div className={`flex items-center gap-2 ${hideResults === 'until_vote' ? 'text-app-primary font-medium' : ''}`}>
+                        <div className="w-1 h-1 bg-cotton-mint rounded-full"></div>
+                        {hideResults === 'until_vote' && <span className="text-cotton-mint">→</span>}
+                        <span>Until Vote: Results hidden until user votes</span>
+                      </div>
+                      <div className={`flex items-center gap-2 ${hideResults === 'entirely' ? 'text-app-primary font-medium' : ''}`}>
+                        <div className="w-1 h-1 bg-cotton-mint rounded-full"></div>
+                        {hideResults === 'entirely' && <span className="text-cotton-mint">→</span>}
+                        <span>Entirely: Only poll creator can see results</span>
+                        {!session && <span className="text-cotton-orange">(Login required)</span>}
+                      </div>
+                    </div>
+
+                    {hideResults === 'entirely' && !session && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-1 text-xs text-cotton-orange bg-cotton-orange/10 px-2 py-1 rounded mt-2"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <span>Login required to create polls with entirely hidden results</span>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
               </div>
             </motion.div>
 
