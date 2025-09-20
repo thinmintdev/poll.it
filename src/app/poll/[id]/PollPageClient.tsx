@@ -5,20 +5,12 @@ import PollStats from '@/components/PollStats'
 import ShareModal from '@/components/ShareModal'
 import ImagePollVoting from '@/components/ImagePollVoting'
 import Comments from '@/components/Comments'
-import { Poll } from '@/types/poll'
+import { Poll, PollResults } from '@/types/poll'
 import { useEffect, useState } from 'react'
 import { useAnalytics } from '@/hooks/useAnalytics'
 import io, { Socket } from 'socket.io-client'
 
-interface Result {
-  votes: number
-  percentage: number
-}
-
-interface Results {
-  totalVotes: number
-  results: Result[]
-}
+// Intentionally left blank to remove unused types
 
 interface PollPageClientProps {
   id: string
@@ -27,7 +19,7 @@ interface PollPageClientProps {
 
 export default function PollPageClient({ id, forceResults = false }: PollPageClientProps) {
   const [poll, setPoll] = useState<Poll | null>(null)
-  const [results, setResults] = useState<Results | null>(null)
+  const [results, setResults] = useState<PollResults | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
@@ -149,7 +141,7 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
         socket.emit('join-poll', id) // Rejoin poll room on reconnection
       })
 
-      socket.on('pollResults', (newResults: Results) => {
+      socket.on('pollResults', (newResults: PollResults) => {
         console.log('Received poll results update:', newResults)
         setResults(newResults)
         setLastResultsFetch(Date.now()) // Track when results were updated via Socket.IO
@@ -522,7 +514,7 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
                     <div>
                       <div className="space-y-4 mb-6">
                         {poll?.options.map((option, index) => {
-                          const result = results?.results[index]
+                          const result = results?.results.find(r => r.option === option)
                           const percent = result?.percentage || 0
                           const voteCount = result?.votes || 0
                           const isSelected = poll?.allow_multiple_selections
@@ -658,11 +650,14 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
                   <div className="h-[320px]">
                     <PollChart
                       key={`${chartType}-${results?.totalVotes || 0}`}
-                      results={poll?.options.map((option, index) => ({
-                        option,
-                        votes: results?.results[index]?.votes || 0,
-                        percentage: results?.results[index]?.percentage || 0
-                      })) || []}
+                      results={poll?.options.map((option) => {
+                        const result = results?.results.find(r => r.option === option)
+                        return {
+                          option,
+                          votes: result?.votes || 0,
+                          percentage: result?.percentage || 0
+                        }
+                      }) || []}
                       type={chartType}
                     />
                   </div>
