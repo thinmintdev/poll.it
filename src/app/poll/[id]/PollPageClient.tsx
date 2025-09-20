@@ -5,12 +5,12 @@ import PollStats from '@/components/PollStats'
 import ShareModal from '@/components/ShareModal'
 import ImagePollVoting from '@/components/ImagePollVoting'
 import Comments from '@/components/Comments'
+import PollAnalyticsDashboard from '@/components/PollAnalyticsDashboard'
 import { Poll, PollResults } from '@/types/poll'
 import { useEffect, useState } from 'react'
 import { useAnalytics } from '@/hooks/useAnalytics'
+import { useAdvancedAnalytics } from '@/hooks/useAdvancedAnalytics'
 import io, { Socket } from 'socket.io-client'
-
-// Intentionally left blank to remove unused types
 
 interface PollPageClientProps {
   id: string
@@ -28,9 +28,19 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
   const [hasVoted, setHasVoted] = useState(false)
   const [actuallyVoted, setActuallyVoted] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
   const [chartType, setChartType] = useState<'doughnut' | 'bar'>('doughnut')
   const [lastResultsFetch, setLastResultsFetch] = useState<number>(0)
   const { trackVote, trackShare } = useAnalytics()
+
+  // Initialize advanced analytics tracking
+  const analytics = useAdvancedAnalytics({
+    pollId: id,
+    trackScrollDepth: true,
+    trackTimeOnPage: true,
+    trackHover: true,
+    trackClicks: true
+  });
 
   useEffect(() => {
     const fetchPollAndResults = async () => {
@@ -51,671 +61,440 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
         if (resultsRes.ok) {
           const resultsData = await resultsRes.json()
           setResults(resultsData)
-        } else if (resultsRes.status === 403) {
-          // Results are hidden - this is expected behavior
-          const errorData = await resultsRes.json()
-          console.log('Results hidden:', errorData.error)
-          setResults(null)
         }
 
-        // Check if user has voted and set initial state
         if (voteStatusRes.ok) {
           const voteStatusData = await voteStatusRes.json()
-          const userHasVoted = voteStatusData.hasVoted
-          const userVotedOptions = voteStatusData.votedOptions || []
-
-          // Set hasVoted state based on actual vote status or forceResults prop
-          setHasVoted(forceResults || userHasVoted)
-          setActuallyVoted(userHasVoted)
-
-          // Set selected options if user has voted
-          if (userHasVoted) {
-            if (voteStatusData.allowMultiple) {
-              setSelectedOptions(userVotedOptions)
-            } else if (userVotedOptions.length > 0) {
-              setSelectedOption(userVotedOptions[0])
-              setSelectedOptions(userVotedOptions)
+          setHasVoted(voteStatusData.hasVoted)
+          if (voteStatusData.hasVoted) {
+            setActuallyVoted(true)
+            if (pollData?.allow_multiple_selections) {
+              setSelectedOptions(voteStatusData.votedOptions || [])
+            } else {
+              setSelectedOption(voteStatusData.votedOptions?.[0] ?? null)
             }
           }
-        } else if (forceResults) {
-          // If we're forcing results but can't get vote status, still show results
-          setHasVoted(true)
         }
 
-        // Don't throw for results or vote status, they might not have any yet
+        setLastResultsFetch(Date.now())
       } catch (err) {
-        if (err instanceof Error) {
-          console.error('Fetch error:', err)
-          setError(err.message)
-        } else {
-          setError('An unknown error occurred while fetching data.')
-        }
+        console.error('Error fetching poll data:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load poll')
       } finally {
         setLoading(false)
       }
     }
 
     fetchPollAndResults()
+  }, [id])
 
-    // Initialize Socket.IO server first, then connect client
-    const initializeSocket = async () => {
-      try {
-        // First, ensure the Socket.IO server is initialized
-        await fetch('/api/socket')
-      } catch (error) {
-        console.warn('Failed to initialize Socket.IO server:', error)
-      }
-
-      // Initialize Socket.IO client with enhanced error handling and reconnection
-      const socket = io({
-        path: '/api/socket',
-        timeout: 10000,
-        forceNew: true,
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 2000,
-        transports: ['polling', 'websocket']
-      })
-
-      return socket
-    }
-
-    const setupSocket = async () => {
-      const socket = await initializeSocket()
-
-      socket.on('connect', () => {
-        console.log('Connected to socket server')
-        socket.emit('join-poll', id)
-      })
-
-      socket.on('disconnect', (reason) => {
-        console.log('Disconnected from socket server:', reason)
-      })
-
-      socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error)
-      })
-
-      socket.on('reconnect', (attempt) => {
-        console.log('Reconnected to socket server on attempt:', attempt)
-        socket.emit('join-poll', id) // Rejoin poll room on reconnection
-      })
-
-      socket.on('pollResults', (newResults: PollResults) => {
-        console.log('Received poll results update:', newResults)
-        setResults(newResults)
-        setLastResultsFetch(Date.now()) // Track when results were updated via Socket.IO
-      })
-
-      socket.on('joined-poll', (data) => {
-        console.log('Successfully joined poll room:', data)
-      })
-
-      socket.on('error', (errorMessage: string) => {
-        console.error('Socket error:', errorMessage)
-        setError(errorMessage)
-      })
-
-      return socket
-    }
-
-    // Setup socket and return cleanup function
+  // Socket.IO for real-time updates
+  useEffect(() => {
     let socket: Socket | null = null
-    setupSocket().then((socketInstance) => {
-      socket = socketInstance
-    }).catch((error) => {
-      console.error('Failed to setup Socket.IO:', error)
-    })
+
+    const connectSocket = async () => {
+      try {
+        await fetch('/api/socket')
+        socket = io({
+          path: '/api/socket',
+          addTrailingSlash: false,
+        })
+
+        socket.on('connect', () => {
+          console.log('Connected to socket server')
+          socket?.emit('join-poll', id)
+        })
+
+        socket.on('pollResults', (data) => {
+          if (data && typeof data.totalVotes === 'number' && Array.isArray(data.results)) {
+            setResults(prevResults => {
+              if (!prevResults?.poll) return prevResults
+              return {
+                ...prevResults,
+                results: prevResults.poll.options.map((option, index) => ({
+                  option,
+                  votes: data.results[index]?.votes || 0,
+                  percentage: data.results[index]?.percentage || 0
+                })),
+                totalVotes: data.totalVotes
+              }
+            })
+            setLastResultsFetch(Date.now())
+          }
+        })
+
+        socket.on('pollVoteReceived', (data) => {
+          if (data?.hideResults) {
+            console.log('Vote received but results are hidden')
+          }
+        })
+
+        socket.on('disconnect', () => {
+          console.log('Disconnected from socket server')
+        })
+
+        socket.on('connect_error', (error) => {
+          console.error('Socket connection error:', error)
+        })
+
+      } catch (error) {
+        console.error('Failed to initialize socket connection:', error)
+      }
+    }
+
+    connectSocket()
 
     return () => {
       if (socket) {
+        socket.emit('leave-poll', id)
         socket.disconnect()
       }
     }
-  }, [id, forceResults])
-
-  // Mobile-friendly polling fallback for results
-  useEffect(() => {
-    if (!hasVoted || !actuallyVoted) return
-
-    const refreshResults = async () => {
-      try {
-        const resultsRes = await fetch(`/api/polls/${id}/results`)
-        if (resultsRes.ok) {
-          const freshResults = await resultsRes.json()
-          setResults(freshResults)
-          setLastResultsFetch(Date.now())
-        } else if (resultsRes.status === 403) {
-          // Results are hidden - this might happen if poll creator changes settings
-          const errorData = await resultsRes.json()
-          console.log('Results hidden during refresh:', errorData.error)
-          setResults(null)
-        }
-      } catch (error) {
-        console.warn('Failed to refresh results:', error)
-      }
-    }
-
-    // Immediate refresh when transitioning to results view
-    refreshResults()
-
-    // Set up polling for mobile devices where Socket.IO might be unreliable
-    const interval = setInterval(() => {
-      if (Date.now() - lastResultsFetch > 5000) { // Only if no recent Socket.IO update
-        refreshResults()
-      }
-    }, 3000)
-
-    return () => clearInterval(interval)
-  }, [hasVoted, actuallyVoted, id, lastResultsFetch])
+  }, [id])
 
   const handleVote = async () => {
-    const isMultiple = poll?.allow_multiple_selections
-    const optionsToVote = isMultiple ? selectedOptions : (selectedOption !== null ? [selectedOption] : [])
+    if (!poll) return
 
-    if (optionsToVote.length === 0) return
+    if (poll.allow_multiple_selections && selectedOptions.length === 0) {
+      alert('Please select at least one option')
+      return
+    }
+
+    if (!poll.allow_multiple_selections && selectedOption === null) {
+      alert('Please select an option')
+      return
+    }
 
     setVoting(true)
-    setError(null)
+
     try {
+      const sessionAnalytics = analytics.getSessionAnalytics();
+      const optionIndex = poll.allow_multiple_selections ? selectedOptions : selectedOption
+
       const response = await fetch(`/api/polls/${id}/vote`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          optionIndex: poll?.allow_multiple_selections ? optionsToVote : optionsToVote[0]
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-id': analytics.sessionId,
+          'x-time-to-vote': sessionAnalytics.timeOnPage.toString()
+        },
+        body: JSON.stringify({ optionIndex }),
       })
+
       const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to vote')
-      }
 
-      // Track vote for analytics
-      trackVote(id)
-
-      // Set voting state immediately but wait for results update
-      setActuallyVoted(true)
-
-      // Wait briefly for Socket.IO results update before showing results view
-      // This ensures mobile users see updated results immediately
-      setTimeout(async () => {
-        // Fetch latest results as fallback in case Socket.IO update hasn't arrived
-        try {
-          const resultsRes = await fetch(`/api/polls/${id}/results`)
-          if (resultsRes.ok) {
-            const latestResults = await resultsRes.json()
-            setResults(latestResults)
-          } else if (resultsRes.status === 403) {
-            // Results are hidden even after voting - handle gracefully
-            const errorData = await resultsRes.json()
-            console.log('Results hidden after voting:', errorData.error)
-            setResults(null)
-          }
-        } catch (error) {
-          console.warn('Failed to fetch latest results after voting:', error)
-        }
+      if (response.ok && data.success) {
         setHasVoted(true)
-      }, 100)
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message)
+        setActuallyVoted(true)
+
+        // Track vote analytics with behavioral context
+        const primaryOptionIndex = Array.isArray(optionIndex) ? optionIndex[0] : optionIndex;
+        const voteId = data.voteIds?.[0] || `vote-${Date.now()}`;
+
+        await analytics.trackVote(
+          primaryOptionIndex,
+          voteId,
+          !hasVoted // isFirstVoteInSession
+        );
+
+        // Track with existing analytics system
+        trackVote(id)
+
+        // Fetch updated results if not using real-time updates
+        const resultsResponse = await fetch(`/api/polls/${id}/results`)
+        if (resultsResponse.ok) {
+          const updatedResults = await resultsResponse.json()
+          setResults(updatedResults)
+        }
       } else {
-        setError('An unknown error occurred')
+        throw new Error(data.error || 'Failed to record vote')
       }
+    } catch (err) {
+      console.error('Error submitting vote:', err)
+      alert(err instanceof Error ? err.message : 'Failed to submit vote. Please try again.')
     } finally {
       setVoting(false)
     }
   }
 
-  const handleOptionSelect = (index: number) => {
-    if (poll?.allow_multiple_selections) {
-      const maxSelections = poll.max_selections || 1
-      setSelectedOptions(prev => {
-        if (prev.includes(index)) {
-          // Remove if already selected
-          return prev.filter(i => i !== index)
-        } else if (prev.length < maxSelections) {
-          // Add if under limit
-          return [...prev, index]
-        }
-        // At limit, don't add
-        return prev
-      })
-    } else {
-      // For single selection, update both states to maintain consistency
-      setSelectedOption(index)
-      setSelectedOptions([index])
+  const handleShare = async (platform: string, method: 'button_click' | 'url_copy' | 'native_share') => {
+    const url = `${window.location.origin}/poll/${id}`;
+
+    // Track with advanced analytics
+    await analytics.trackShare(platform, method, url);
+
+    // Track with existing analytics system
+    trackShare(platform, id);
+
+    // Close modal
+    setShowShareModal(false);
+  }
+
+  const handleOptionHover = (optionIndex: number, isHovering: boolean) => {
+    analytics.trackOptionHover(optionIndex, isHovering);
+  }
+
+  const canShowResults = () => {
+    if (forceResults) return true
+    if (!poll) return false
+
+    switch (poll.hide_results) {
+      case 'entirely':
+        return false
+      case 'until_vote':
+        return actuallyVoted
+      case 'none':
+      default:
+        return true
     }
   }
 
-  const getCottonColor = (index: number) => {
-    const colors = [
-      { 
-        gradient: 'linear-gradient(135deg, #ff6b9d40, #ff6b9d)', 
-        accent: '#ff6b9d',
-        name: 'cotton-pink'
-      },
-      { 
-        gradient: 'linear-gradient(135deg, #4facfe40, #4facfe)', 
-        accent: '#4facfe',
-        name: 'cotton-blue'
-      },
-      { 
-        gradient: 'linear-gradient(135deg, #9f7aea40, #9f7aea)', 
-        accent: '#9f7aea',
-        name: 'cotton-purple'
-      },
-      { 
-        gradient: 'linear-gradient(135deg, #00f5a040, #00f5a0)', 
-        accent: '#00f5a0',
-        name: 'cotton-mint'
-      },
-      { 
-        gradient: 'linear-gradient(135deg, #ffa72640, #ffa726)', 
-        accent: '#ffa726',
-        name: 'cotton-peach'
-      },
-      { 
-        gradient: 'linear-gradient(135deg, #e879f940, #e879f9)', 
-        accent: '#e879f9',
-        name: 'cotton-lavender'
-      },
-    ]
-    return colors[index % colors.length]
+  const shouldShowVotingInterface = () => {
+    if (!poll) return false
+    if (forceResults) return false
+    return !hasVoted
+  }
+
+  const getPageTitle = () => {
+    if (!poll) return 'Loading...'
+    if (forceResults) return `Results: ${poll.question}`
+    return poll.question
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-app-bg flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-flex items-center space-x-2 text-app-secondary">
-            <svg className="animate-spin h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span className="text-lg">Loading poll...</span>
-          </div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading poll...</p>
         </div>
       </div>
     )
   }
 
-  if (error && !poll) {
+  if (error || !poll) {
     return (
-      <div className="min-h-screen bg-app-bg flex items-center justify-center p-4">
-        <div className="text-center card max-w-md">
-          <div className="text-red-400 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-app-primary mb-4">Poll Not Found</h2>
-          <p className="text-app-secondary mb-6">
-            {error || "The poll you're looking for doesn't exist or has been removed."}
-          </p>
-          <Link href="/" className="btn-primary">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            <span>Go Home</span>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😕</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Poll Not Found</h1>
+          <p className="text-gray-600 mb-6">{error || 'The poll you\'re looking for doesn\'t exist.'}</p>
+          <Link href="/" className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+            Back to Home
           </Link>
         </div>
       </div>
     )
   }
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
-
   return (
-    <div className="min-h-screen bg-app-bg text-app-primary">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-blue-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-1 h-8 bg-gradient-primary rounded-full"></div>
-            <h1 className="text-4xl md:text-5xl font-bold text-gradient-primary leading-tight">
-              {poll?.question}
-            </h1>
-            <div className="flex items-center space-x-1 text-cotton-mint text-sm">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex justify-between items-start mb-4">
+              <h1 className="text-2xl font-bold text-gray-800">{getPageTitle()}</h1>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowAnalytics(!showAnalytics)}
+                  className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                >
+                  📊 Analytics
+                </button>
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Share
+                </button>
+              </div>
             </div>
+
+            {poll.description && (
+              <p className="text-gray-600 mb-4">{poll.description}</p>
+            )}
+
+            {/* Poll Stats */}
+            <PollStats
+              poll={poll}
+              totalVotes={results?.totalVotes || 0}
+              showResults={canShowResults()}
+              lastUpdate={lastResultsFetch}
+            />
           </div>
-          {poll?.description && (
-            <div className="mb-6 max-w-4xl mx-auto">
-              <p className="text-app-secondary text-lg leading-relaxed text-center">
-                {poll.description}
-              </p>
+
+          {/* Analytics Dashboard */}
+          {showAnalytics && (
+            <div className="mb-6">
+              <PollAnalyticsDashboard pollId={id} />
             </div>
           )}
-          <div className="flex items-center justify-center space-x-6 text-app-secondary">
-            <div className="flex items-center space-x-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span>{results?.totalVotes || 0} vote{(results?.totalVotes || 0) !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-cotton-mint">
-              <div className="w-2.5 h-2.5 bg-current rounded-full animate-pulse"></div>
-              <span>Live Results</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto">
-          {poll?.poll_type === 'image' ? (
-            /* Image Poll - Full Width */
-            <div className="card">
-              <div className="mb-6">
-                <h2 className="text-app-primary text-xl font-bold">{hasVoted ? 'Results' : 'Cast Your Vote'}</h2>
-                <p className="text-app-muted text-sm">by a guest • {hasVoted ? 'just now' : '4 minutes ago'}</p>
-              </div>
-              <ImagePollVoting
-                poll={poll}
-                results={results}
-                hasVoted={hasVoted}
-                voting={voting}
-                selectedOptions={selectedOptions}
-                onOptionSelect={handleOptionSelect}
-                onVote={handleVote}
-                onBackToPoll={() => setHasVoted(false)}
-                onViewResults={() => setHasVoted(true)}
-                error={error}
-                actuallyVoted={actuallyVoted}
-              />
-            </div>
-          ) : (
-            /* Text Poll - Two Column Layout */
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Column: Poll Choices Only */}
-              <div className="space-y-8">
-                {/* Poll Voting Card */}
-                <div className="card">
-                  <div className="mb-6">
-                    <h2 className="text-app-primary text-xl font-bold">{hasVoted ? 'Results' : 'Cast Your Vote'}</h2>
-                    <p className="text-app-muted text-sm">by a guest • {hasVoted ? 'just now' : '4 minutes ago'}</p>
-                  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Voting Interface */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                {shouldShowVotingInterface() ? 'Cast Your Vote' : 'Your Selection'}
+              </h2>
 
-                  {!hasVoted ? (
-                    <div>
-                      <div className="space-y-4 mb-6">
-                        {poll?.options.map((option, index) => {
-                          const isSelected = poll?.allow_multiple_selections
+              {poll.poll_type === 'image' ? (
+                <ImagePollVoting
+                  pollId={id}
+                  poll={poll}
+                  selectedOption={selectedOption}
+                  selectedOptions={selectedOptions}
+                  setSelectedOption={setSelectedOption}
+                  setSelectedOptions={setSelectedOptions}
+                  onVote={handleVote}
+                  voting={voting}
+                  hasVoted={hasVoted}
+                  disabled={!shouldShowVotingInterface()}
+                  onOptionHover={handleOptionHover}
+                />
+              ) : (
+                <div className="space-y-3">
+                  {poll.options.map((option, index) => (
+                    <label
+                      key={index}
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
+                        poll.allow_multiple_selections
+                          ? selectedOptions.includes(index)
+                            ? 'border-purple-500 bg-purple-50'
+                            : 'border-gray-200 hover:border-purple-300'
+                          : selectedOption === index
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                      onMouseEnter={() => handleOptionHover(index, true)}
+                      onMouseLeave={() => handleOptionHover(index, false)}
+                    >
+                      <input
+                        type={poll.allow_multiple_selections ? 'checkbox' : 'radio'}
+                        name="poll-option"
+                        value={index}
+                        checked={
+                          poll.allow_multiple_selections
                             ? selectedOptions.includes(index)
                             : selectedOption === index
-
-                          return (
-                            <label
-                              key={index}
-                              className={`w-full cursor-pointer ${isSelected ? 'btn-gradient-border text-cotton-purple' : 'btn-secondary'}`}
-                            >
-                              <input
-                                type={poll?.allow_multiple_selections ? "checkbox" : "radio"}
-                                name="poll-option"
-                                value={index}
-                                checked={isSelected}
-                                onChange={() => handleOptionSelect(index)}
-                                className="sr-only"
-                              />
-                              <span className="text-center w-full flex items-center justify-center gap-2">
-                                {poll?.allow_multiple_selections && (
-                                  <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
-                                    isSelected ? 'bg-cotton-purple border-cotton-purple' : 'border-app-muted'
-                                  }`}>
-                                    {isSelected && (
-                                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                      </svg>
-                                    )}
-                                  </div>
-                                )}
-                                {option}
-                              </span>
-                            </label>
-                          )
-                        })}
-                      </div>
-
-                      {poll?.allow_multiple_selections && (
-                        <div className="mb-4 text-sm text-app-muted text-center">
-                          {selectedOptions.length === 0
-                            ? `Select up to ${poll.max_selections || 1} option${(poll.max_selections || 1) > 1 ? 's' : ''}`
-                            : `${selectedOptions.length} of ${poll.max_selections || 1} selected`
-                          }
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-4">
-                        <button
-                          onClick={handleVote}
-                          disabled={
-                            (poll?.allow_multiple_selections ? selectedOptions.length === 0 : selectedOption === null) ||
-                            voting
-                          }
-                          className="btn-primary w-full"
-                        >
-                          {voting ? 'Voting...' : 'Vote'}
-                        </button>
-
-                        <button
-                          className="btn-secondary"
-                          onClick={() => setHasVoted(true)}
-                        >
-                          Results
-                        </button>
-                      </div>
-
-                      {error && (
-                        <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                          <p className="text-red-400 text-sm">{error}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : results ? (
-                    <div>
-                      <div className="space-y-4 mb-6">
-                        {poll?.options.map((option, index) => {
-                          const result = results?.results.find(r => r.option === option)
-                          const percent = result?.percentage || 0
-                          const voteCount = result?.votes || 0
-                          const isSelected = poll?.allow_multiple_selections
-                            ? selectedOptions.includes(index)
-                            : selectedOption === index
-                          const colorTheme = getCottonColor(index)
-
-                          return (
-                            <div key={index} className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                <span className={`font-semibold truncate pr-4 text-sm ${isSelected ? 'text-cotton-purple' : 'text-app-primary'}`}>
-                                  {option}
-                                </span>
-                                <div className="flex items-center space-x-3 text-sm">
-                                  <span
-                                    className="font-bold"
-                                    style={{ color: colorTheme.accent }}
-                                  >
-                                    {voteCount}
-                                  </span>
-                                  <span className="text-app-muted font-medium">
-                                    {percent.toFixed(1)}%
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="relative">
-                                <div className="w-full bg-app-surface rounded-full h-3 overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all duration-700 ease-out relative"
-                                    style={{
-                                      width: `${percent}%`,
-                                      background: colorTheme.gradient
-                                    }}
-                                  >
-                                    {percent > 0 && (
-                                      <div
-                                        className="absolute inset-0 rounded-full opacity-50"
-                                        style={{
-                                          background: `linear-gradient(90deg, transparent, ${colorTheme.accent}60)`,
-                                          animation: 'shimmer 2s infinite'
-                                        }}
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-
-                      <p className="text-app-muted text-sm mb-6 text-center">Total votes: {results?.totalVotes || 0}</p>
-
-                      <div className="flex items-center gap-4">
-                        {!actuallyVoted && (
-                          <button
-                            className="btn-secondary w-full"
-                            onClick={() => setHasVoted(false)}
-                          >
-                            Back to Poll
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setShowShareModal(true)}
-                          className="btn-clear"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                          </svg>
-                          Share
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Results are hidden */
-                    <div className="text-center py-8">
-                      <div className="text-cotton-mint mb-4">
-                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L12 12m7.758-1.758l4.242 4.242" />
-                        </svg>
-                      </div>
-                      <h3 className="text-app-primary text-xl font-semibold mb-2">Results Hidden</h3>
-                      <p className="text-app-secondary mb-6">
-                        {poll?.hide_results === 'entirely'
-                          ? 'Only the poll creator can view these results.'
-                          : 'Vote to see the results!'
                         }
-                      </p>
-                      {!actuallyVoted && (
-                        <button
-                          className="btn-secondary"
-                          onClick={() => setHasVoted(false)}
-                        >
-                          Back to Poll
-                        </button>
-                      )}
-                    </div>
+                        onChange={(e) => {
+                          if (shouldShowVotingInterface()) {
+                            if (poll.allow_multiple_selections) {
+                              if (e.target.checked) {
+                                if (selectedOptions.length < (poll.max_selections || 1)) {
+                                  setSelectedOptions([...selectedOptions, index])
+                                }
+                              } else {
+                                setSelectedOptions(selectedOptions.filter(i => i !== index))
+                              }
+                            } else {
+                              setSelectedOption(index)
+                            }
+                          }
+                        }}
+                        disabled={!shouldShowVotingInterface()}
+                        className="mr-3 text-purple-600"
+                      />
+                      <span className="flex-1 text-gray-700">{option}</span>
+                    </label>
+                  ))}
+
+                  {poll.allow_multiple_selections && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      Select up to {poll.max_selections} option{poll.max_selections !== 1 ? 's' : ''}
+                      {selectedOptions.length > 0 && ` (${selectedOptions.length} selected)`}
+                    </p>
+                  )}
+
+                  {shouldShowVotingInterface() && (
+                    <button
+                      onClick={handleVote}
+                      disabled={
+                        voting ||
+                        (poll.allow_multiple_selections
+                          ? selectedOptions.length === 0
+                          : selectedOption === null)
+                      }
+                      className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-4"
+                    >
+                      {voting ? 'Submitting...' : 'Submit Vote'}
+                    </button>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* Results */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Results</h2>
+                {canShowResults() && results && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setChartType('doughnut')}
+                      className={`px-3 py-1 rounded text-sm ${
+                        chartType === 'doughnut'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Pie
+                    </button>
+                    <button
+                      onClick={() => setChartType('bar')}
+                      className={`px-3 py-1 rounded text-sm ${
+                        chartType === 'bar'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Bar
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Right Column: Charts + Stats + Discussion */}
-              <div className="space-y-8">
-                {/* Chart Panel */}
-                <div className="card">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <svg className="w-6 h-6 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <span className="text-app-primary font-semibold text-lg">Chart</span>
-                    </div>
-                    <div className="flex justify-center gap-2 bg-app-surface p-1 rounded-lg">
-                      <button
-                        onClick={() => setChartType('doughnut')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          chartType === 'doughnut' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
-                        }`}
-                      >
-                        Pie
-                      </button>
-                      <button
-                        onClick={() => setChartType('bar')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          chartType === 'bar' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
-                        }`}
-                      >
-                        Bar
-                      </button>
-                    </div>
-                  </div>
-                  <div className="h-[320px]">
-                    <PollChart
-                      key={`${chartType}-${results?.totalVotes || 0}`}
-                      results={poll?.options.map((option) => {
-                        const result = results?.results.find(r => r.option === option)
-                        return {
-                          option,
-                          votes: result?.votes || 0,
-                          percentage: result?.percentage || 0
-                        }
-                      }) || []}
-                      type={chartType}
-                    />
-                  </div>
-                </div>
-
-                {/* Stats Panel */}
-                <PollStats
-                  pollId={id}
-                  results={results}
-                  views={1234} // TODO: Implement view tracking
-                  shares={89}  // TODO: Implement share tracking
-                  isLive={true}
+              {canShowResults() && results ? (
+                <PollChart
+                  data={results}
+                  type={chartType}
+                  height={300}
                 />
-
-                {/* Comments/Feed Panel */}
-                <div className="card">
-                  <div className="flex items-center gap-3 mb-4">
-                    <svg className="w-6 h-6 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    <span className="text-app-primary font-semibold text-lg">
-                      {poll?.comments_enabled ? 'Discussion' : 'Feed'}
-                    </span>
-                    {poll?.comments_enabled && (
-                      <div className="flex items-center gap-1 text-xs text-cotton-mint">
-                        <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
-                        <span>Live Chat</span>
-                      </div>
-                    )}
+              ) : (
+                <div className="flex items-center justify-center h-64 text-gray-500">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">🔒</div>
+                    <p className="font-medium">Results Hidden</p>
+                    <p className="text-sm">
+                      {poll.hide_results === 'until_vote'
+                        ? 'Vote to see results'
+                        : 'Results are not visible for this poll'}
+                    </p>
                   </div>
-                  <Comments
-                    pollId={id}
-                    commentsEnabled={poll?.comments_enabled || false}
-                  />
                 </div>
-              </div>
+              )}
+            </div>
+          </div>
+
+          {/* Comments Section */}
+          {poll.comments_enabled && (
+            <div className="mt-6">
+              <Comments pollId={id} />
             </div>
           )}
         </div>
-        
-        {/* Share Modal */}
-        <ShareModal 
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          pollUrl={currentUrl}
-          pollTitle={poll?.question || 'Poll'}
-          pollId={id}
-          onShare={(method) => trackShare(method, id)}
-        />
       </div>
-      
-      {/* Shimmer animation styles */}
-      <style jsx>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-      `}</style>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          pollId={id}
+          pollQuestion={poll.question}
+          onClose={() => setShowShareModal(false)}
+          onShare={handleShare}
+        />
+      )}
     </div>
   )
 }

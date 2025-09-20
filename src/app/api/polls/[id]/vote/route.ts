@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/database';
+import { trackVoteEvent } from '@/lib/analytics';
 import { v4 as uuidv4 } from 'uuid';
 import { VoteData } from '@/types/poll';
 import { getClientIP } from '@/utils/ip';
-import { 
-  HTTP_STATUS, 
+import {
+  HTTP_STATUS,
   ERROR_MESSAGES,
   SOCKET_CONFIG,
 } from '@/constants/config';
@@ -74,7 +75,7 @@ export async function POST(
       maxSelections,
       totalOptions,
     });
-    
+
     if (selectionError) {
       return NextResponse.json(
         { error: selectionError },
@@ -84,6 +85,8 @@ export async function POST(
 
     // Check if this IP has already voted on this poll (for single selection polls)
     // For multiple selection polls, check if they've already voted for these specific options
+    let isFirstVoteInSession = true;
+
     if (!allowMultiple) {
       const existingVoteResult = await query(
         'SELECT id FROM votes WHERE poll_id = $1 AND voter_ip = $2',
@@ -106,6 +109,9 @@ export async function POST(
       const existingIndices = existingVotesResult.rows.map(row => row.option_index)
       const alreadyVoted = optionIndices.some(idx => existingIndices.includes(idx))
 
+      // User has voted before if they have any existing votes
+      isFirstVoteInSession = existingIndices.length === 0;
+
       if (alreadyVoted) {
         return NextResponse.json(
           { error: ERROR_MESSAGES.ALREADY_VOTED_OPTIONS },
@@ -123,27 +129,50 @@ export async function POST(
       }
     }
 
-    // Record the votes
+    // Record the votes and track analytics
+    const voteIds = [];
     for (const idx of optionIndices) {
+      const voteId = uuidv4();
+      voteIds.push(voteId);
+
       await query(
         'INSERT INTO votes (id, poll_id, option_index, voter_ip) VALUES ($1, $2, $3, $4)',
-        [uuidv4(), pollId, idx, voterIp]
+        [voteId, pollId, idx, voterIp]
       )
+
+      // Track vote analytics for each option (async, non-blocking)
+      try {
+        const sessionId = request.headers.get('x-session-id') || voteId;
+        const timeToVote = request.headers.get('x-time-to-vote') ?
+          parseInt(request.headers.get('x-time-to-vote')!) : undefined;
+
+        await trackVoteEvent({
+          pollId,
+          voteId,
+          optionIndex: idx,
+          sessionId,
+          timeToVote,
+          isFirstVoteInSession: isFirstVoteInSession && idx === optionIndices[0]
+        }, request);
+      } catch (analyticsError) {
+        console.warn('Analytics tracking failed for vote:', analyticsError);
+        // Don't fail the vote if analytics fails
+      }
     }
 
     // Get updated results and broadcast to all clients in the poll room
     const resultsQuery = await query(`
-      SELECT 
+      SELECT
         option_index,
         COUNT(*) as votes
-      FROM votes 
-      WHERE poll_id = $1 
+      FROM votes
+      WHERE poll_id = $1
       GROUP BY option_index
       ORDER BY option_index
     `, [pollId])
 
     const totalVotes = resultsQuery.rows.reduce((sum, row) => sum + parseInt(row.votes), 0)
-    
+
     // Build results array based on poll type
     const results = []
     for (let index = 0; index < totalOptions; index++) {
@@ -190,7 +219,10 @@ export async function POST(
     }
 
     return NextResponse.json(
-      { success: true }, 
+      {
+        success: true,
+        voteIds: voteIds // Return vote IDs for analytics correlation
+      },
       { status: HTTP_STATUS.CREATED }
     );
   } catch (error) {
@@ -204,7 +236,7 @@ export async function POST(
 
 /**
  * Validate vote data structure and basic constraints
- * 
+ *
  * @param optionIndices - Array of option indices to validate
  * @returns Error message if validation fails, null if valid
  */
@@ -212,23 +244,23 @@ function validateVoteData(optionIndices: number[]): string | null {
   if (!Array.isArray(optionIndices) || optionIndices.length === 0) {
     return ERROR_MESSAGES.INVALID_OPTION_INDEX;
   }
-  
+
   // Check for invalid indices (negative numbers, undefined, null)
   if (optionIndices.some(idx => idx === undefined || idx === null || idx < 0)) {
     return ERROR_MESSAGES.INVALID_OPTION_INDEX;
   }
-  
+
   // Check for non-integer indices
   if (optionIndices.some(idx => !Number.isInteger(idx))) {
     return ERROR_MESSAGES.INVALID_OPTION_INDEX;
   }
-  
+
   return null;
 }
 
 /**
  * Validate selection rules against poll configuration
- * 
+ *
  * @param params - Object containing validation parameters
  * @returns Error message if validation fails, null if valid
  */
@@ -239,26 +271,26 @@ function validateSelectionRules(params: {
   totalOptions: number;
 }): string | null {
   const { optionIndices, allowMultiple, maxSelections, totalOptions } = params;
-  
+
   // Check if poll allows multiple selections but user provided multiple
   if (!allowMultiple && optionIndices.length > 1) {
     return ERROR_MESSAGES.SINGLE_SELECTION_ONLY;
   }
-  
+
   // Check if user exceeded maximum allowed selections
   if (allowMultiple && optionIndices.length > maxSelections) {
     return `Maximum ${maxSelections} ${ERROR_MESSAGES.MAX_SELECTIONS_EXCEEDED}`;
   }
-  
+
   // Check if all option indices are within valid range
   if (optionIndices.some(idx => idx >= totalOptions)) {
     return ERROR_MESSAGES.INVALID_OPTION;
   }
-  
+
   // Check for duplicate selections
   if (new Set(optionIndices).size !== optionIndices.length) {
     return ERROR_MESSAGES.DUPLICATE_SELECTIONS;
   }
-  
+
   return null;
 }
