@@ -8,6 +8,10 @@ export interface Poll {
   allow_multiple_selections?: boolean
   max_selections?: number
   comments_enabled?: boolean
+  hide_results?: 'none' | 'until_vote' | 'entirely'
+  user_id?: string | null
+  is_public?: boolean
+  allow_anonymous_voting?: boolean
   created_at: string
   updated_at: string
 }
@@ -46,6 +50,7 @@ export interface CreatePollData {
   allowMultipleSelections?: boolean
   maxSelections?: number
   commentsEnabled?: boolean
+  hideResults?: 'none' | 'until_vote' | 'entirely'
 }
 
 export interface CreateImageOption {

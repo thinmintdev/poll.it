@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/database';
 import { v4 as uuidv4 } from 'uuid';
 import { CreatePollData } from '@/types/poll';
-import { getServerSession } from 'next-auth';
+import { getServerSession, Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import {
   POLL_CONFIG,
@@ -34,7 +34,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       imageOptions,
       allowMultipleSelections = POLL_CONFIG.DEFAULT_ALLOW_MULTIPLE,
       maxSelections = POLL_CONFIG.DEFAULT_MAX_SELECTIONS,
-      commentsEnabled = false
+      commentsEnabled = false,
+      hideResults = 'none'
     } = body;
 
     console.log('Received poll data:', {
@@ -54,7 +55,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       imageOptions,
       allowMultipleSelections,
       maxSelections,
-    });
+      hideResults,
+    }, session);
     
     if (validationError) {
       return NextResponse.json(
@@ -70,10 +72,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Insert poll into database with proper error handling
     const result = await query(
       `INSERT INTO polls
-       (id, question, description, options, poll_type, allow_multiple_selections, max_selections, user_id, comments_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       (id, question, description, options, poll_type, allow_multiple_selections, max_selections, user_id, comments_enabled, hide_results)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [pollId, question, description || null, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections, userId, commentsEnabled]
+      [pollId, question, description || null, JSON.stringify(options), pollType, allowMultipleSelections, maxSelections, userId, commentsEnabled, hideResults]
     );
 
     const poll = result.rows[0];
@@ -143,8 +145,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * @param data - Poll creation data to validate
  * @returns Error message if validation fails, null if valid
  */
-function validatePollCreationData(data: CreatePollData): string | null {
-  const { question, description, options, pollType = 'text', imageOptions, allowMultipleSelections, maxSelections } = data;
+function validatePollCreationData(data: CreatePollData, session: Session | null): string | null {
+  const { question, description, options, pollType = 'text', imageOptions, allowMultipleSelections, maxSelections, hideResults } = data;
   
   // Check required fields
   if (!question) {
@@ -159,6 +161,16 @@ function validatePollCreationData(data: CreatePollData): string | null {
   // Validate description length if provided
   if (description && description.length > 1000) {
     return 'Description must be 1000 characters or less';
+  }
+
+  // Validate hideResults setting
+  if (hideResults && !['none', 'until_vote', 'entirely'].includes(hideResults)) {
+    return 'Hide results must be one of: none, until_vote, entirely';
+  }
+
+  // Validate that 'entirely' option requires authentication
+  if (hideResults === 'entirely' && !session) {
+    return 'You must be logged in to create polls with entirely hidden results';
   }
 
   // Validate poll type

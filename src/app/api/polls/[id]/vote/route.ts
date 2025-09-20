@@ -35,7 +35,7 @@ export async function POST(
 
     // Verify poll exists and get poll settings
     const pollResult = await query(
-      'SELECT options, poll_type, allow_multiple_selections, max_selections FROM polls WHERE id = $1',
+      'SELECT options, poll_type, allow_multiple_selections, max_selections, hide_results FROM polls WHERE id = $1',
       [pollId]
     )
 
@@ -55,6 +55,7 @@ export async function POST(
     const allowMultiple = poll.allow_multiple_selections || false
     const maxSelections = poll.max_selections || 1
     const isImagePoll = poll.poll_type === 'image'
+    const hideResults = poll.hide_results || 'none'
 
     // For image polls, get the total number of image options
     let totalOptions = options.length
@@ -153,19 +154,32 @@ export async function POST(
     }
 
     // Broadcast updated results to all clients in the poll room
+    // Only broadcast if results are not hidden
     try {
       // Access the socket.io instance from the global store
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const io = (global as any).io
-      if (io) {
+      if (io && hideResults === 'none') {
+        // Only broadcast results if they're not hidden
         const roomName = `${SOCKET_CONFIG.POLL_ROOM_PREFIX}${pollId}`;
         io.to(roomName).emit('pollResults', {
           totalVotes,
           results
         });
-        
+
         if (process.env.NODE_ENV === 'development') {
           console.log(`Broadcasted poll results to ${roomName} room`);
+        }
+      } else if (io && hideResults !== 'none') {
+        // For hidden results, broadcast a signal that results were updated but don't include data
+        const roomName = `${SOCKET_CONFIG.POLL_ROOM_PREFIX}${pollId}`;
+        io.to(roomName).emit('pollVoteReceived', {
+          pollId,
+          hideResults: true
+        });
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Broadcasted vote received signal to ${roomName} room (results hidden)`);
         }
       } else {
         console.log('Socket.IO instance not found - results will not be broadcast in real-time')
