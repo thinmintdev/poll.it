@@ -14,6 +14,9 @@ import {
   Filler,
   ChartOptions,
   ChartData,
+  CartesianScaleOptions,
+  LinearScaleOptions,
+  CategoryScaleOptions,
 } from 'chart.js';
 import { createChartConfig, getCachedColors, getGradientColors } from '@/lib/chart-themes';
 import { formatNumber, formatDate, PerformanceMonitor } from '@/lib/analytics-utils';
@@ -146,8 +149,44 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
       },
     });
 
+    // Create properly typed scales configuration
+    const xScale: CategoryScaleOptions = {
+      ...(baseOptions.scales?.x as CategoryScaleOptions),
+      type: 'category',
+      grid: {
+        display: showGrid,
+        color: 'var(--border-light)',
+      },
+      ticks: {
+        maxTicksLimit: 8,
+        maxRotation: 45,
+        color: 'var(--text-secondary)',
+      },
+    };
+
+    const yScale: LinearScaleOptions = {
+      ...(baseOptions.scales?.y as LinearScaleOptions),
+      type: 'linear',
+      beginAtZero: true,
+      grid: {
+        display: showGrid,
+        color: 'var(--border-light)',
+      },
+      ticks: {
+        callback: function(value) {
+          return formatNumber(value as number, 'compact');
+        },
+        color: 'var(--text-secondary)',
+      },
+    };
+
     return {
-      ...baseOptions,
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: animate ? {
+        duration: 800,
+        easing: 'easeInOutCubic',
+      } : false,
       onClick: (event, elements) => {
         if (elements.length > 0 && onDataClick) {
           const index = elements[0].index;
@@ -158,38 +197,22 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
         }
       },
       scales: {
-        ...baseOptions.scales,
-        x: {
-          ...baseOptions.scales?.x,
-          grid: {
-            ...baseOptions.scales?.x?.grid,
-            display: showGrid,
-          },
-          ticks: {
-            ...baseOptions.scales?.x?.ticks,
-            maxTicksLimit: 8,
-            maxRotation: 45,
-          },
-        },
-        y: {
-          ...baseOptions.scales?.y,
-          grid: {
-            ...baseOptions.scales?.y?.grid,
-            display: showGrid,
-          },
-          beginAtZero: true,
-          ticks: {
-            ...baseOptions.scales?.y?.ticks,
-            callback: function(value) {
-              return formatNumber(value as number, 'compact');
-            },
-          },
-        },
+        x: xScale,
+        y: yScale,
       },
       plugins: {
-        ...baseOptions.plugins,
+        legend: {
+          display: false,
+        },
         tooltip: {
-          ...baseOptions.plugins?.tooltip,
+          enabled: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
+          borderColor: 'var(--border-light)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          displayColors: true,
           callbacks: {
             title: (context) => {
               return context[0].label;
@@ -205,7 +228,7 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
         intersect: false,
         mode: 'index',
       },
-    } as ChartOptions<'line'>;
+    };
   }, [theme, animate, showGrid, onDataClick, data]);
 
   // Chart initialization effect

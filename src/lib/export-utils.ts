@@ -18,23 +18,29 @@ import {
   ExportValidationResult,
   StreamingExportContext
 } from '@/types/export';
+import type { DatabaseRow } from '@/types/database';
+
+// Define the rate limit rejection response type
+interface RateLimitRejection {
+  msBeforeNext: number;
+  remainingPoints?: number;
+  totalHits?: number;
+}
 
 // Rate limiter configuration
 const exportRateLimiter = new RateLimiterMemory({
-  keyGenerator: (req: any) => req.userId || req.ip,
   points: 5, // 5 exports
   duration: 3600, // per hour
 });
 
 const heavyExportRateLimiter = new RateLimiterMemory({
-  keyGenerator: (req: any) => req.userId || req.ip,
   points: 2, // 2 heavy exports (raw data)
   duration: 3600, // per hour
 });
 
 // Cache for recent exports
 const exportCache = new Map<string, {
-  data: any;
+  data: string | Buffer | ExportableAnalyticsData;
   metadata: ExportMetadata;
   expiresAt: Date;
 }>();
@@ -140,10 +146,11 @@ export async function checkRateLimit(
     const limiter = granularity === 'raw' ? heavyExportRateLimiter : exportRateLimiter;
     await limiter.consume(identifier);
     return { allowed: true };
-  } catch (rejRes: any) {
+  } catch (rejRes: unknown) {
+    const rejection = rejRes as RateLimitRejection;
     return {
       allowed: false,
-      msBeforeNext: rejRes.msBeforeNext
+      msBeforeNext: rejection.msBeforeNext
     };
   }
 }
@@ -172,7 +179,7 @@ export function getCachedExport(
   format: ExportFormat,
   granularity: ExportGranularity,
   filters: DataFilter
-): { data: any; metadata: ExportMetadata } | null {
+): { data: string | Buffer | ExportableAnalyticsData; metadata: ExportMetadata } | null {
   // No caching for raw data exports
   if (granularity === 'raw') return null;
 
@@ -198,7 +205,7 @@ export function cacheExport(
   format: ExportFormat,
   granularity: ExportGranularity,
   filters: DataFilter,
-  data: any,
+  data: string | Buffer | ExportableAnalyticsData,
   metadata: ExportMetadata,
   ttlMinutes: number = 30
 ): void {
@@ -227,7 +234,7 @@ export async function fetchAnalyticsData(
 ): Promise<ExportableAnalyticsData> {
   const startTime = Date.now();
   let whereClause = 'WHERE poll_id = $1';
-  let params: any[] = [pollId];
+  let params: (string | number)[] = [pollId];
   let paramIndex = 2;
 
   // Build dynamic filters
@@ -363,7 +370,7 @@ export async function fetchAnalyticsData(
     data.geographic_data.top_countries = geoResult.rows.map(row => ({
       country_code: row.country_code,
       country_name: getCountryName(row.country_code),
-      views: parseInt(row.views),
+      views: parseInt(row.views as string),
       votes: 0, // Would need join to get votes by country
       shares: 0, // Would need join to get shares by country
       percentage: 0 // Calculate after getting totals
@@ -383,11 +390,11 @@ export async function fetchAnalyticsData(
       `, params);
 
       data.temporal_data.daily_breakdown = dailyResult.rows.map(row => ({
-        date: row.date,
-        views: parseInt(row.views),
+        date: row.date as string,
+        views: parseInt(row.views as string),
         votes: 0,
         shares: 0,
-        unique_visitors: parseInt(row.unique_visitors)
+        unique_visitors: parseInt(row.unique_visitors as string)
       }));
     }
 
@@ -405,9 +412,9 @@ export async function fetchAnalyticsData(
     `, params);
 
     data.device_analytics.device_performance = devicePerfResult.rows.map(row => ({
-      device_type: row.device_type,
-      avg_load_time: parseFloat(row.avg_load_time) || 0,
-      bounce_rate: parseFloat(row.bounce_rate) || 0,
+      device_type: row.device_type as string,
+      avg_load_time: parseFloat(row.avg_load_time as string) || 0,
+      bounce_rate: parseFloat(row.bounce_rate as string) || 0,
       completion_rate: 0 // Would need additional calculation
     }));
   }
@@ -441,9 +448,51 @@ export async function fetchAnalyticsData(
     `, params);
 
     data.raw_events = {
-      page_views: pageViewsResult.rows,
-      votes: votesResult.rows,
-      shares: sharesResult.rows,
+      page_views: pageViewsResult.rows.map(row => ({
+        id: row.id as string,
+        poll_id: row.poll_id as string,
+        visitor_hash: row.visitor_hash as string,
+        session_id: row.session_id as string | undefined,
+        referrer: row.referrer as string | undefined,
+        user_agent: row.user_agent as string | undefined,
+        ip_address: row.ip_address as string | undefined,
+        country_code: row.country_code as string | undefined,
+        region: row.region as string | undefined,
+        city: row.city as string | undefined,
+        device_type: row.device_type as string | undefined,
+        browser: row.browser as string | undefined,
+        os: row.os as string | undefined,
+        screen_resolution: row.screen_resolution as string | undefined,
+        language: row.language as string | undefined,
+        time_zone: row.time_zone as string | undefined,
+        time_on_page: row.time_on_page as number | undefined,
+        scroll_depth: row.scroll_depth as number | undefined,
+        created_at: row.created_at as string,
+      })),
+      votes: votesResult.rows.map(row => ({
+        id: row.id as string,
+        poll_id: row.poll_id as string,
+        option_index: row.option_index as number,
+        voter_ip: row.voter_ip as string,
+        voter_hash: row.voter_hash as string | undefined,
+        session_id: row.session_id as string | undefined,
+        device_type: row.device_type as string | undefined,
+        browser: row.browser as string | undefined,
+        country_code: row.country_code as string | undefined,
+        region: row.region as string | undefined,
+        time_to_vote: row.time_to_vote as number | undefined,
+        created_at: row.created_at as string,
+      })),
+      shares: sharesResult.rows.map(row => ({
+        id: row.id as string,
+        poll_id: row.poll_id as string,
+        platform: row.platform as string,
+        share_type: row.share_type as 'link' | 'qr' | 'social' | 'embed',
+        referrer: row.referrer as string | undefined,
+        user_agent: row.user_agent as string | undefined,
+        country_code: row.country_code as string | undefined,
+        created_at: row.created_at as string,
+      })),
       clicks: [] // Would need click events table
     };
   }
@@ -512,7 +561,7 @@ export function generateCSV(data: ExportableAnalyticsData, granularity: ExportGr
       rows.push(headers.map(h => `"${h}"`).join(','));
       data.raw_events.page_views.forEach(event => {
         const values = headers.map(h => {
-          const value = event[h];
+          const value = (event as unknown as Record<string, unknown>)[h];
           return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
         });
         rows.push(values.join(','));
@@ -598,7 +647,7 @@ export function generateXLSX(data: ExportableAnalyticsData, granularity: ExportG
 /**
  * Generate data integrity checksum
  */
-export function generateChecksum(data: any): string {
+export function generateChecksum(data: ExportableAnalyticsData): string {
   const dataString = JSON.stringify(data, Object.keys(data).sort());
   return crypto.createHash('md5').update(dataString).digest('hex');
 }

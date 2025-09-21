@@ -1,15 +1,15 @@
 'use client'
 
 import { useRef, useEffect, useMemo } from 'react';
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  Title, 
-  Tooltip, 
-  Legend, 
-  ArcElement 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
 } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
@@ -17,12 +17,12 @@ import { CHART_CONFIG } from '@/constants/config';
 
 // Register Chart.js components globally to avoid re-registration
 ChartJS.register(
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  Title, 
-  Tooltip, 
-  Legend, 
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
   ArcElement
 );
 
@@ -38,6 +38,8 @@ interface PollChartProps {
   }[] | null;
   /** Chart type - either doughnut (default) or bar chart */
   type?: 'doughnut' | 'bar';
+  /** Chart height in pixels (optional) */
+  height?: number;
 }
 
 /**
@@ -123,9 +125,10 @@ const getCottonColors = () => {
  *
  * @param results - Array of poll results to visualize, or null when results are hidden
  * @param type - Chart type ('doughnut' or 'bar')
+ * @param height - Chart height in pixels (optional)
  * @returns JSX element containing the chart
  */
-export default function PollChart({ results, type = 'doughnut' }: PollChartProps) {
+export default function PollChart({ results, type = 'doughnut', height }: PollChartProps) {
   // Use ref to prevent unnecessary re-renders and maintain chart state
   const chartRef = useRef<ChartRef>(null);
 
@@ -160,7 +163,7 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
   // Handle null results when poll results are hidden
   if (results === null) {
     return (
-      <div className={`${CHART_CONFIG.HEIGHT} w-full flex items-center justify-center`}>
+      <div className={`${height ? `h-[${height}px]` : CHART_CONFIG.HEIGHT} w-full flex items-center justify-center`}>
         <div className="text-center text-gray-400">
           <div className="mb-3">
             <svg
@@ -188,7 +191,7 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
   // If no valid results, show empty state
   if (validResults.length === 0) {
     return (
-      <div className={`${CHART_CONFIG.HEIGHT} w-full flex items-center justify-center`}>
+      <div className={`${height ? `h-[${height}px]` : CHART_CONFIG.HEIGHT} w-full flex items-center justify-center`}>
         <div className="text-center text-app-muted">
           <p>No poll data available</p>
         </div>
@@ -317,19 +320,19 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
   };
 
   return (
-    <div className={`${CHART_CONFIG.HEIGHT} w-full`}>
+    <div className={`${height ? `h-[${height}px]` : CHART_CONFIG.HEIGHT} w-full`}>
       {type === 'doughnut' ? (
-        <Doughnut 
-          ref={chartRef} 
-          data={data} 
+        <Doughnut
+          ref={chartRef}
+          data={data}
           options={options}
           // Accessibility attributes
           aria-label={`Poll results doughnut chart showing ${validResults.length} options`}
           role="img"
         />
       ) : (
-        <Bar 
-          data={data} 
+        <Bar
+          data={data}
           options={options}
           // Accessibility attributes
           aria-label={`Poll results bar chart showing ${validResults.length} options`}

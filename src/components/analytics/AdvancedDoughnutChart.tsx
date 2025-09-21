@@ -9,6 +9,8 @@ import {
   Legend,
   ChartOptions,
   ChartData,
+  LegendItem,
+  Chart,
 } from 'chart.js';
 import { createChartConfig, getCachedColors } from '@/lib/chart-themes';
 import { formatNumber, PerformanceMonitor } from '@/lib/analytics-utils';
@@ -104,7 +106,12 @@ const AdvancedDoughnutChart = memo<AdvancedDoughnutChartProps>(({
     });
 
     return {
-      ...baseOptions,
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: animate ? {
+        duration: 800,
+        easing: 'easeInOutCubic',
+      } : false,
       onClick: (event, elements) => {
         if (elements.length > 0 && onDataClick) {
           const index = elements[0].index;
@@ -115,26 +122,49 @@ const AdvancedDoughnutChart = memo<AdvancedDoughnutChartProps>(({
         }
       },
       plugins: {
-        ...baseOptions.plugins,
         legend: {
-          ...baseOptions.plugins?.legend,
-          onClick: (event, legendItem, legend) => {
-            // Custom legend click handler
+          display: showLegend,
+          position: 'bottom',
+          labels: {
+            color: 'var(--text-primary)',
+            font: {
+              family: 'Poppins, system-ui, sans-serif',
+              size: 12,
+            },
+            padding: 20,
+            usePointStyle: true,
+            pointStyle: 'circle',
+          },
+          onClick: (event: any, legendItem: LegendItem, legend: any) => {
+            // Custom legend click handler with type safety
             const index = legendItem.index!;
-            const chart = legend.chart;
+            const chart = legend.chart as Chart;
             const meta = chart.getDatasetMeta(0);
 
-            meta.data[index].hidden = !meta.data[index].hidden;
+            // Type assertion for Chart.js element properties
+            const element = meta.data[index] as any;
+            element.hidden = !element.hidden;
             chart.update();
           },
         },
         tooltip: {
-          ...baseOptions.plugins?.tooltip,
+          enabled: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
+          borderColor: 'var(--border-light)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          displayColors: true,
           callbacks: {
-            ...baseOptions.plugins?.tooltip?.callbacks,
+            label: (context) => {
+              const label = context.label || '';
+              const value = context.raw as number;
+              return `${label}: ${formatNumber(value)}`;
+            },
             afterLabel: (context) => {
               if (showPercentages && showValues) {
-                const total = context.dataset.data.reduce((sum: number, val: number) => sum + val, 0);
+                const total = (context.dataset.data as number[]).reduce((sum: number, val: number) => sum + val, 0);
                 const percentage = ((context.raw as number / total) * 100).toFixed(1);
                 return `${formatNumber(context.raw as number)} (${percentage}%)`;
               }
@@ -147,7 +177,15 @@ const AdvancedDoughnutChart = memo<AdvancedDoughnutChartProps>(({
         intersect: false,
         mode: 'index',
       },
-    } as ChartOptions<'doughnut'>;
+      cutout: '60%',
+      elements: {
+        arc: {
+          borderWidth: 2,
+          borderColor: 'var(--background)',
+          hoverBorderWidth: 3,
+        },
+      },
+    };
   }, [theme, animate, showLegend, showPercentages, showValues, onDataClick, data]);
 
   // Chart initialization effect

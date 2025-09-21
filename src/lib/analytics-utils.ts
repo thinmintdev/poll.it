@@ -11,6 +11,7 @@ import type {
   PerformanceMetrics,
   VirtualizationOptions,
 } from '@/types/analytics';
+import type { DatabaseRow, BatchUpdateHandler } from '@/types/database';
 
 // Number formatting utilities
 export const formatNumber = (value: number, format: 'compact' | 'full' | 'percentage' = 'compact'): string => {
@@ -26,8 +27,9 @@ export const formatNumber = (value: number, format: 'compact' | 'full' | 'percen
 };
 
 export const formatCurrency = (value: number, currency: string = 'USD'): string => {
-  return numbro(value).formatCurrency({
-    currency,
+  return numbro(value).format({
+    output: 'currency',
+    currencySymbol: currency === 'USD' ? '$' : '€',
     mantissa: value < 100 ? 2 : 0,
   });
 };
@@ -46,13 +48,13 @@ export const getDateRange = (days: number = 30): { start: Date; end: Date } => {
 
 // Data processing utilities
 export const processChartData = (
-  rawData: any[],
+  rawData: DatabaseRow[],
   labelKey: string,
   valueKey: string,
   limit?: number
 ): ChartDataPoint[] => {
   let processed = rawData.map((item, index) => ({
-    label: item[labelKey] || `Item ${index + 1}`,
+    label: String(item[labelKey] || `Item ${index + 1}`),
     value: Number(item[valueKey]) || 0,
   }));
 
@@ -84,13 +86,13 @@ export const processChartData = (
 };
 
 export const processTimeSeriesData = (
-  rawData: any[],
+  rawData: DatabaseRow[],
   dateKey: string,
   valueKey: string,
   groupBy: 'hour' | 'day' | 'week' | 'month' = 'day'
 ): TimeSeriesDataPoint[] => {
   const grouped = rawData.reduce((acc, item) => {
-    const date = typeof item[dateKey] === 'string' ? parseISO(item[dateKey]) : item[dateKey];
+    const date = typeof item[dateKey] === 'string' ? parseISO(item[dateKey] as string) : item[dateKey] as Date;
     let key: string;
 
     switch (groupBy) {
@@ -126,7 +128,7 @@ export const processTimeSeriesData = (
 };
 
 export const processGeographicData = (
-  rawData: any[],
+  rawData: DatabaseRow[],
   countryKey: string,
   valueKey: string
 ): GeographicDataPoint[] => {
@@ -134,17 +136,17 @@ export const processGeographicData = (
     const country = item[countryKey];
     if (!country) return acc;
 
-    if (!acc[country]) {
-      acc[country] = {
-        country,
-        countryCode: item.countryCode || country.slice(0, 2).toUpperCase(),
+    if (!acc[country as string]) {
+      acc[country as string] = {
+        country: country as string,
+        countryCode: (item.countryCode as string) || (country as string).slice(0, 2).toUpperCase(),
         value: 0,
-        latitude: item.latitude,
-        longitude: item.longitude,
+        latitude: item.latitude as number,
+        longitude: item.longitude as number,
       };
     }
 
-    acc[country].value += Number(item[valueKey]) || 0;
+    acc[country as string].value += Number(item[valueKey]) || 0;
     return acc;
   }, {} as Record<string, GeographicDataPoint>);
 
@@ -160,14 +162,14 @@ export const processGeographicData = (
 };
 
 // Performance optimization utilities
-export const createDebouncedHandler = <T extends any[]>(
+export const createDebouncedHandler = <T extends unknown[]>(
   handler: (...args: T) => void,
   delay: number = 300
 ) => {
   return debounce(handler, delay);
 };
 
-export const createThrottledHandler = <T extends any[]>(
+export const createThrottledHandler = <T extends unknown[]>(
   handler: (...args: T) => void,
   limit: number = 100
 ) => {
@@ -253,7 +255,7 @@ export const validateTimeSeriesData = (data: TimeSeriesDataPoint[]): boolean => 
 };
 
 // Memory management utilities
-export const cleanupChartRefs = (refs: React.RefObject<any>[]): void => {
+export const cleanupChartRefs = (refs: React.RefObject<{ chartInstance?: { destroy(): void } }>[]): void => {
   refs.forEach(ref => {
     if (ref.current?.chartInstance) {
       ref.current.chartInstance.destroy();
@@ -278,7 +280,7 @@ export const prepareDataForExport = (
     headers.join(','),
     ...data.map(row =>
       headers.map(header => {
-        const value = (row as any)[header];
+        const value = (row as Record<string, unknown>)[header];
         return typeof value === 'string' && value.includes(',')
           ? `"${value}"`
           : value;
@@ -310,12 +312,12 @@ export const generateColorVariations = (baseColor: string, count: number): strin
 };
 
 // Real-time data utilities
-export const createDataUpdateHandler = (
-  updateCallback: (data: any) => void,
+export const createDataUpdateHandler = <T = unknown>(
+  updateCallback: BatchUpdateHandler<T>,
   batchSize: number = 10,
   batchDelay: number = 1000
 ) => {
-  let batch: any[] = [];
+  let batch: T[] = [];
   let timeoutId: NodeJS.Timeout | null = null;
 
   const processBatch = () => {
@@ -326,7 +328,7 @@ export const createDataUpdateHandler = (
     timeoutId = null;
   };
 
-  return (data: any) => {
+  return (data: T) => {
     batch.push(data);
 
     if (batch.length >= batchSize) {

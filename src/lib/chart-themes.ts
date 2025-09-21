@@ -1,5 +1,6 @@
 // Chart theme configuration for cotton-candy design system
 import type { ChartTheme, ChartOptions } from '@/types/analytics';
+import type { TooltipContext } from '@/types/database';
 
 // Cotton candy color palette for charts
 export const COTTON_CANDY_COLORS = {
@@ -117,10 +118,10 @@ export const createChartConfig = (
         cornerRadius: 8,
         displayColors: true,
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipContext) => {
             const label = context.label || '';
             const value = context.parsed || context.raw;
-            const dataset = context.dataset;
+            const dataset = context.chart.data.datasets[context.datasetIndex];
 
             if (mergedOptions.tooltip.format === 'percentage') {
               const total = dataset.data.reduce((sum: number, val: number) => sum + val, 0);
@@ -256,10 +257,20 @@ export const getChartColors = (
   return result;
 };
 
+// Chart area interface for gradient generation
+interface ChartArea {
+  bottom: number;
+  top: number;
+  left: number;
+  right: number;
+  width: number;
+  height: number;
+}
+
 // Generate gradient colors for enhanced visuals
 export const getGradientColors = (
   ctx: CanvasRenderingContext2D,
-  chartArea: any,
+  chartArea: ChartArea,
   colorStops: string[]
 ) => {
   const gradient = ctx.createLinearGradient(

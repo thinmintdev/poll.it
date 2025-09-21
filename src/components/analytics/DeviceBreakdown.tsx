@@ -2,7 +2,14 @@
 
 import React, { useState } from 'react'
 import { Doughnut, Bar } from 'react-chartjs-2'
-import { Smartphone, Monitor, Tablet, Chrome, Firefox, Safari, Apple, Windows } from 'lucide-react'
+import {
+  Smartphone,
+  Monitor,
+  Tablet,
+  Globe, // Using Globe instead of Chrome which doesn't exist
+  // Firefox and Safari don't exist in lucide-react, using alternatives
+  // Apple and Windows don't exist either, using alternatives
+} from 'lucide-react'
 import { AnalyticsData } from '@/types/poll'
 
 interface DeviceBreakdownProps {
@@ -135,25 +142,28 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
     }
   }
 
-  // Browser icons mapping
+  // Browser icons mapping (using available icons as fallbacks)
   const getBrowserIcon = (browser: string) => {
     switch (browser.toLowerCase()) {
-      case 'chrome': return Chrome
-      case 'firefox': return Firefox
-      case 'safari': return Safari
-      default: return Chrome
+      case 'chrome':
+      case 'firefox':
+      case 'safari':
+      case 'edge':
+      default:
+        return Globe // Using Globe as a generic browser icon
     }
   }
 
-  // OS icons mapping
+  // OS icons mapping (using available icons as fallbacks)
   const getOSIcon = (os: string) => {
     switch (os.toLowerCase()) {
       case 'ios':
       case 'macos':
-        return Apple
+        return Smartphone // Using as fallback for Apple devices
       case 'windows':
-        return Windows
-      default: return Monitor
+        return Monitor // Using as fallback for Windows
+      default:
+        return Monitor
     }
   }
 
@@ -242,7 +252,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
           <div className="flex bg-app-surface rounded-lg p-1">
             {[
               { value: 'device', label: 'Devices', icon: Smartphone },
-              { value: 'browser', label: 'Browsers', icon: Chrome },
+              { value: 'browser', label: 'Browsers', icon: Globe },
               { value: 'os', label: 'OS', icon: Monitor }
             ].map((option) => (
               <button

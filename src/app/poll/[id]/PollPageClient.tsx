@@ -457,7 +457,7 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
 
               {canShowResults() && results ? (
                 <PollChart
-                  data={results}
+                  results={results?.results || null}
                   type={chartType}
                   height={300}
                 />

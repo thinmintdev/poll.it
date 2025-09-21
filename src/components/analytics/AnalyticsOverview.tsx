@@ -4,6 +4,7 @@ import React from 'react'
 import { Line, Bar } from 'react-chartjs-2'
 import { TrendingUp, TrendingDown, Activity, Users, Timer, Globe } from 'lucide-react'
 import { AnalyticsData } from '@/types/poll'
+import type { ChartOptions } from 'chart.js'
 
 interface AnalyticsOverviewProps {
   analytics: AnalyticsData
@@ -86,6 +87,49 @@ export const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({ analytics 
     return `${minutes}m ${remainingSeconds}s`
   }
 
+  // Chart options with proper typing
+  const chartOptions: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'var(--bg-card)',
+        titleColor: 'var(--text-primary)',
+        bodyColor: 'var(--text-secondary)',
+        borderColor: 'var(--border-light)',
+        borderWidth: 1,
+        cornerRadius: 8
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          color: 'var(--border)',
+          display: true
+        },
+        ticks: {
+          color: 'var(--text-muted)'
+        }
+      },
+      y: {
+        grid: {
+          color: 'var(--border)',
+          display: true
+        },
+        ticks: {
+          color: 'var(--text-muted)'
+        }
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Key Performance Indicators */}
@@ -138,114 +182,88 @@ export const AnalyticsOverview: React.FC<AnalyticsOverviewProps> = ({ analytics 
           <div className="h-80">
             <Line
               data={timeSeriesData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    display: false
-                  },
-                  tooltip: {
-                    backgroundColor: 'var(--bg-card)',
-                    titleColor: 'var(--text-primary)',
-                    bodyColor: 'var(--text-secondary)',
-                    borderColor: 'var(--border-light)',
-                    borderWidth: 1,
-                    cornerRadius: 8
-                  }
-                },
-                scales: {
-                  x: {
-                    grid: {
-                      color: 'var(--border)',
-                      drawBorder: false
-                    },
-                    ticks: {
-                      color: 'var(--text-muted)'
-                    }
-                  },
-                  y: {
-                    grid: {
-                      color: 'var(--border)',
-                      drawBorder: false
-                    },
-                    ticks: {
-                      color: 'var(--text-muted)'
-                    }
-                  }
-                },
-                interaction: {
-                  intersect: false,
-                  mode: 'index'
-                }
-              }}
+              options={chartOptions}
             />
           </div>
         ) : (
           <div className="h-80 flex items-center justify-center text-app-muted">
             <div className="text-center">
-              <Activity className="w-12 h-12 mx-auto mb-4 text-cotton-purple" />
-              <p>No timeline data available</p>
-              <p className="text-sm">Data will appear as engagement grows</p>
+              <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No analytics data available</p>
+              <p className="text-sm opacity-75">Start collecting data by sharing your polls</p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Engagement Funnel */}
+      {/* Additional Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Conversion Funnel */}
+        {/* Views vs Votes Trend */}
         <div className="glass-card rounded-xl p-6">
-          <h3 className="text-xl font-semibold text-app-primary mb-6">Conversion Funnel</h3>
+          <h4 className="text-lg font-semibold text-app-primary mb-4">Weekly Trends</h4>
           <div className="space-y-4">
-            {[
-              { label: 'Page Views', value: analytics.total_views, percentage: 100, color: 'cotton-blue' },
-              { label: 'Engaged Users', value: Math.round(analytics.total_views * (1 - analytics.bounce_rate)), percentage: (1 - analytics.bounce_rate) * 100, color: 'cotton-purple' },
-              { label: 'Voted', value: analytics.total_votes, percentage: analytics.completion_rate * 100, color: 'cotton-pink' },
-              { label: 'Shared', value: analytics.total_shares, percentage: (analytics.total_shares / analytics.total_views) * 100, color: 'cotton-mint' }
-            ].map((step, index) => (
-              <div key={index} className="relative">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-app-primary">{step.label}</span>
-                  <div className="text-right">
-                    <div className="font-bold text-app-primary">{step.value.toLocaleString()}</div>
-                    <div className={`text-sm text-${step.color}`}>{step.percentage.toFixed(1)}%</div>
-                  </div>
-                </div>
-                <div className="w-full bg-app-surface rounded-full h-3">
-                  <div
-                    className={`h-full bg-${step.color} rounded-full transition-all duration-1000`}
-                    style={{ width: `${step.percentage}%` }}
-                  ></div>
+            <div className="flex items-center justify-between">
+              <span className="text-app-muted">Views</span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold text-app-primary">{recentViews.toLocaleString()}</span>
+                <div className={`flex items-center gap-1 text-sm ${
+                  viewsTrend > 0 ? 'text-cotton-mint' : 'text-cotton-pink'
+                }`}>
+                  {viewsTrend > 0 ? (
+                    <TrendingUp className="w-4 h-4" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4" />
+                  )}
+                  <span>{Math.abs(viewsTrend).toFixed(1)}%</span>
                 </div>
               </div>
-            ))}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-app-muted">Votes</span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold text-app-primary">{recentVotes.toLocaleString()}</span>
+                <div className={`flex items-center gap-1 text-sm ${
+                  votesTrend > 0 ? 'text-cotton-mint' : 'text-cotton-pink'
+                }`}>
+                  {votesTrend > 0 ? (
+                    <TrendingUp className="w-4 h-4" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4" />
+                  )}
+                  <span>{Math.abs(votesTrend).toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Quick Stats */}
+        {/* Engagement Rate */}
         <div className="glass-card rounded-xl p-6">
-          <h3 className="text-xl font-semibold text-app-primary mb-6">Quick Stats</h3>
+          <h4 className="text-lg font-semibold text-app-primary mb-4">Engagement Quality</h4>
           <div className="space-y-4">
-            {[
-              { label: 'Peak Activity Hour', value: `${analytics.peak_hour}:00`, description: 'Most active time of day' },
-              { label: 'Views Trend', value: `${viewsTrend > 0 ? '+' : ''}${viewsTrend.toFixed(1)}%`, description: 'Change from last week' },
-              { label: 'Votes Trend', value: `${votesTrend > 0 ? '+' : ''}${votesTrend.toFixed(1)}%`, description: 'Change from last week' },
-              { label: 'Engagement Rate', value: `${((analytics.total_votes + analytics.total_shares) / analytics.total_views * 100).toFixed(1)}%`, description: 'Votes + shares vs views' }
-            ].map((stat, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-app-surface rounded-lg">
-                <div>
-                  <div className="font-medium text-app-primary">{stat.label}</div>
-                  <div className="text-sm text-app-muted">{stat.description}</div>
-                </div>
-                <div className="text-lg font-bold text-cotton-purple">{stat.value}</div>
-              </div>
-            ))}
+            <div className="flex items-center justify-between">
+              <span className="text-app-muted">Conversion Rate</span>
+              <span className="text-lg font-semibold text-app-primary">
+                {recentViews > 0 ? ((recentVotes / recentViews) * 100).toFixed(1) : '0.0'}%
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-app-muted">Active Polls</span>
+              <span className="text-lg font-semibold text-app-primary">
+                {analytics.total_polls.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-app-muted">Avg. Votes/Poll</span>
+              <span className="text-lg font-semibold text-app-primary">
+                {analytics.total_polls > 0 ?
+                  (analytics.total_votes / analytics.total_polls).toFixed(1) : '0.0'
+                }
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   )
 }
-
-export default AnalyticsOverview

@@ -12,7 +12,7 @@ export interface AnalyticsEvent {
   pollId: string;
   eventType: 'page_view' | 'vote' | 'share' | 'click';
   sessionId: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean>;
 }
 
 export interface PageViewData {

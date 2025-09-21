@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement } from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 
 // Register Chart.js components
 ChartJS.register(
@@ -17,186 +17,156 @@ ChartJS.register(
   PointElement
 );
 
+// Define time range type
+type TimeRange = 'today' | 'week' | 'month' | 'all';
+
 interface PollAnalyticsData {
   poll_id: string;
   question: string;
-  poll_created_at: string;
   total_views: number;
   unique_viewers: number;
   total_votes: number;
-  completion_rate: number;
   total_shares: number;
-  share_to_vote_ratio: number;
-  avg_time_to_vote: number;
-  avg_time_on_page: number;
-  top_countries: string[];
-  device_breakdown: Record<string, number>;
-  share_breakdown: Record<string, number>;
+  completion_rate: number;
+  bounce_rate: number;
   viral_coefficient: number;
+  share_to_vote_ratio: number;
+  avg_time_on_page: number;
+  avg_time_to_vote: number;
+  return_visitor_rate: number;
+  interaction_rate: number;
+  device_breakdown: Record<string, number>;
+  browser_breakdown: Record<string, number>;
+  os_breakdown: Record<string, number>;
+  share_breakdown: Record<string, number>;
+  top_countries: string[];
   analytics_updated_at: string;
 }
 
-interface PollAnalyticsDashboardProps {
+interface Props {
   pollId: string;
-  className?: string;
+  analytics: PollAnalyticsData;
 }
 
-export const PollAnalyticsDashboard: React.FC<PollAnalyticsDashboardProps> = ({
-  pollId,
-  className = ''
-}) => {
-  const [analytics, setAnalytics] = useState<PollAnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month' | 'all'>('all');
+const PollAnalyticsDashboard: React.FC<Props> = ({ pollId, analytics }) => {
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
+  const [loading, setLoading] = useState(false);
 
-  // Fetch analytics data
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/analytics/${pollId}?daily=true`);
-        const result = await response.json();
-
-        if (result.success) {
-          setAnalytics(result.data);
-        } else {
-          setError(result.error || 'Failed to fetch analytics');
-        }
-      } catch (err) {
-        setError('Network error while fetching analytics');
-        console.error('Analytics fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (pollId) {
-      fetchAnalytics();
-    }
-  }, [pollId, timeRange]);
-
-  // Format numbers for display
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
+  // Color schemes for charts
+  const colors = {
+    primary: ['#3B82F6', '#8B5CF6', '#EF4444', '#10B981', '#F59E0B'],
+    background: ['rgba(59, 130, 246, 0.2)', 'rgba(139, 92, 246, 0.2)', 'rgba(239, 68, 68, 0.2)', 'rgba(16, 185, 129, 0.2)', 'rgba(245, 158, 11, 0.2)']
   };
 
-  // Format percentage
-  const formatPercentage = (decimal: number) => `${(decimal * 100).toFixed(1)}%`;
-
-  // Format time duration
-  const formatDuration = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
-  };
-
-  if (loading) {
-    return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[1, 2].map(i => (
-              <div key={i} className="h-64 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !analytics) {
-    return (
-      <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
-        <div className="text-center text-gray-500">
-          <p className="text-lg font-medium mb-2">Analytics Unavailable</p>
-          <p>{error || 'No analytics data found for this poll'}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Prepare chart data
-  const deviceChartData = {
-    labels: Object.keys(analytics.device_breakdown || {}),
-    datasets: [{
-      data: Object.values(analytics.device_breakdown || {}),
-      backgroundColor: ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6'],
-      borderWidth: 2,
-      borderColor: '#ffffff'
-    }]
-  };
-
-  const shareChartData = {
-    labels: Object.keys(analytics.share_breakdown || {}),
-    datasets: [{
-      data: Object.values(analytics.share_breakdown || {}),
-      backgroundColor: ['#1DA1F2', '#4267B2', '#0A66C2', '#25D366', '#FF6B35'],
-      borderWidth: 2,
-      borderColor: '#ffffff'
-    }]
-  };
-
+  // Calculate engagement metrics
   const engagementMetrics = [
     {
       label: 'Total Views',
-      value: formatNumber(analytics.total_views),
-      icon: '👁️',
+      value: analytics.total_views?.toLocaleString() || '0',
+      icon: '👀',
       color: 'text-blue-600'
     },
     {
-      label: 'Unique Viewers',
-      value: formatNumber(analytics.unique_viewers),
-      icon: '👥',
+      label: 'Total Votes',
+      value: analytics.total_votes?.toLocaleString() || '0',
+      icon: '🗳️',
       color: 'text-green-600'
     },
     {
-      label: 'Total Votes',
-      value: formatNumber(analytics.total_votes),
-      icon: '🗳️',
+      label: 'Completion Rate',
+      value: `${(analytics.completion_rate * 100 || 0).toFixed(1)}%`,
+      icon: '✅',
       color: 'text-purple-600'
     },
     {
-      label: 'Completion Rate',
-      value: formatPercentage(analytics.completion_rate),
-      icon: '✅',
+      label: 'Total Shares',
+      value: analytics.total_shares?.toLocaleString() || '0',
+      icon: '📤',
       color: 'text-orange-600'
     }
   ];
 
+  // Calculate performance metrics
   const performanceMetrics = [
     {
-      label: 'Avg. Time to Vote',
-      value: formatDuration(analytics.avg_time_to_vote),
-      icon: '⏱️'
+      label: 'Bounce Rate',
+      value: `${(analytics.bounce_rate * 100 || 0).toFixed(1)}%`,
+      icon: '🔄'
     },
     {
       label: 'Avg. Time on Page',
-      value: formatDuration(analytics.avg_time_on_page),
-      icon: '📖'
+      value: `${(analytics.avg_time_on_page || 0).toFixed(1)}s`,
+      icon: '⏱️'
     },
     {
-      label: 'Share-to-Vote Ratio',
-      value: analytics.share_to_vote_ratio.toFixed(2),
+      label: 'Share to Vote Ratio',
+      value: (analytics.share_to_vote_ratio || 0).toFixed(2),
       icon: '📊'
     },
     {
       label: 'Viral Coefficient',
-      value: analytics.viral_coefficient.toFixed(2),
+      value: (analytics.viral_coefficient || 0).toFixed(2),
       icon: '🚀'
     }
   ];
 
+  // Process device breakdown data for chart
+  const deviceChartData = {
+    labels: Object.keys(analytics.device_breakdown || {}),
+    datasets: [
+      {
+        data: Object.values(analytics.device_breakdown || {}),
+        backgroundColor: colors.primary.slice(0, Object.keys(analytics.device_breakdown || {}).length),
+        borderWidth: 2,
+        borderColor: '#fff'
+      }
+    ]
+  };
+
+  // Process share breakdown data for chart
+  const shareChartData = {
+    labels: Object.keys(analytics.share_breakdown || {}),
+    datasets: [
+      {
+        data: Object.values(analytics.share_breakdown || {}),
+        backgroundColor: colors.primary.slice(0, Object.keys(analytics.share_breakdown || {}).length),
+        borderWidth: 2,
+        borderColor: '#fff'
+      }
+    ]
+  };
+
+  // Refresh analytics data when time range changes
+  useEffect(() => {
+    // This would typically fetch new data based on the time range
+    // For now, we'll just simulate loading
+    setLoading(true);
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, [timeRange]);
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-gray-50 rounded-lg p-4">
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                  <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`bg-white rounded-lg shadow-md ${className}`}>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -207,7 +177,7 @@ export const PollAnalyticsDashboard: React.FC<PollAnalyticsDashboardProps> = ({
           <div className="mt-4 sm:mt-0">
             <select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as any)}
+              onChange={(e) => setTimeRange(e.target.value as TimeRange)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="today">Today</option>
@@ -238,7 +208,7 @@ export const PollAnalyticsDashboard: React.FC<PollAnalyticsDashboardProps> = ({
         {/* Performance Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {performanceMetrics.map((metric, index) => (
-            <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+            <div key={`perf-${index}`} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{metric.label}</p>

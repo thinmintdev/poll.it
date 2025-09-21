@@ -12,6 +12,8 @@ import {
   Legend,
   ChartOptions,
   ChartData,
+  LinearScaleOptions,
+  CategoryScaleOptions,
 } from 'chart.js';
 import { createChartConfig, getCachedColors } from '@/lib/chart-themes';
 import { formatNumber, PerformanceMonitor } from '@/lib/analytics-utils';
@@ -100,24 +102,72 @@ const BarChart = memo<BarChartProps>(({
 
   // Memoized chart options
   const chartOptions = useMemo((): ChartOptions<'bar'> => {
-    const baseOptions = createChartConfig('bar', theme, {
-      responsive: true,
-      maintainAspectRatio: false,
-      animations: animate,
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        enabled: true,
-        format: 'value',
-      },
-    });
-
     const isHorizontal = orientation === 'horizontal';
 
+    // Create properly typed scales configuration
+    const xScale: CategoryScaleOptions | LinearScaleOptions = isHorizontal
+      ? {
+          type: 'linear',
+          beginAtZero: true,
+          grid: {
+            display: true,
+            color: 'var(--border-light)',
+          },
+          ticks: {
+            callback: function(value) {
+              return formatNumber(Number(value), 'compact');
+            },
+            color: 'var(--text-secondary)',
+          },
+        } as LinearScaleOptions
+      : {
+          type: 'category',
+          grid: {
+            display: false,
+          },
+          ticks: {
+            maxRotation: 45,
+            color: 'var(--text-secondary)',
+          },
+        } as CategoryScaleOptions;
+
+    const yScale: LinearScaleOptions | CategoryScaleOptions = isHorizontal
+      ? {
+          type: 'category',
+          grid: {
+            display: false,
+          },
+          ticks: {
+            color: 'var(--text-secondary)',
+          },
+        } as CategoryScaleOptions
+      : {
+          type: 'linear',
+          beginAtZero: true,
+          grid: {
+            display: true,
+            color: 'var(--border-light)',
+          },
+          ticks: {
+            callback: function(value) {
+              return formatNumber(Number(value), 'compact');
+            },
+            color: 'var(--text-secondary)',
+          },
+        } as LinearScaleOptions;
+
     return {
-      ...baseOptions,
+      responsive: true,
+      maintainAspectRatio: false,
       indexAxis: isHorizontal ? 'y' : 'x',
+      animation: animate ? {
+        duration: 800,
+        easing: 'easeInOutCubic',
+      } : false,
+      scales: {
+        x: xScale,
+        y: yScale,
+      },
       onClick: (event, elements) => {
         if (elements.length > 0 && onDataClick) {
           const index = elements[0].index;
@@ -127,33 +177,19 @@ const BarChart = memo<BarChartProps>(({
           }
         }
       },
-      scales: {
-        x: {
-          ...baseOptions.scales?.x,
-          beginAtZero: !isHorizontal,
-          ticks: {
-            ...baseOptions.scales?.x?.ticks,
-            maxRotation: isHorizontal ? 0 : 45,
-            callback: isHorizontal ? function(value) {
-              return formatNumber(value as number, 'compact');
-            } : undefined,
-          },
-        },
-        y: {
-          ...baseOptions.scales?.y,
-          beginAtZero: isHorizontal,
-          ticks: {
-            ...baseOptions.scales?.y?.ticks,
-            callback: !isHorizontal ? function(value) {
-              return formatNumber(value as number, 'compact');
-            } : undefined,
-          },
-        },
-      },
       plugins: {
-        ...baseOptions.plugins,
+        legend: {
+          display: false,
+        },
         tooltip: {
-          ...baseOptions.plugins?.tooltip,
+          enabled: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
+          borderColor: 'var(--border-light)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          displayColors: true,
           callbacks: {
             title: (context) => {
               return context[0].label;
@@ -164,28 +200,19 @@ const BarChart = memo<BarChartProps>(({
             },
           },
         },
-        datalabels: showValues ? {
-          display: true,
-          color: 'white',
-          font: {
-            weight: 'bold' as const,
-            size: 12,
-          },
-          formatter: (value: number) => {
-            return formatNumber(value, 'compact');
-          },
-          anchor: 'center' as const,
-          align: 'center' as const,
-        } : {
-          display: false,
-        },
       },
       interaction: {
         intersect: false,
         mode: 'index',
       },
-    } as ChartOptions<'bar'>;
-  }, [theme, animate, orientation, showValues, onDataClick, data]);
+      elements: {
+        bar: {
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+      },
+    };
+  }, [theme, animate, orientation, onDataClick, data]);
 
   // Chart initialization effect
   useEffect(() => {

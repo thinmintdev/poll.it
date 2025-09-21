@@ -1,5 +1,7 @@
 // Analytics and data visualization types
 
+import { DatabaseRow } from './database';
+
 export interface ChartDataPoint {
   label: string;
   value: number;
@@ -100,10 +102,10 @@ export interface MapOptions {
 }
 
 // Virtualization types for large datasets
-export interface VirtualizedListItem {
+export interface VirtualizedListItem<T = DatabaseRow> {
   id: string;
   height: number;
-  data: any;
+  data: T;
   index: number;
 }
 

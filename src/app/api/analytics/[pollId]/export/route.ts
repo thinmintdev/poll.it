@@ -1,12 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPollAnalytics, getDailyAnalytics } from '@/lib/analytics'
 
+// Define types for the export data structure
+interface PollInfo {
+  id: string;
+  question: string;
+  created_at: string;
+  export_date: string;
+}
+
+interface SummaryMetrics {
+  total_views: number;
+  unique_viewers: number;
+  total_votes: number;
+  completion_rate: number;
+  total_shares: number;
+  share_to_vote_ratio: number;
+  viral_coefficient: number;
+  avg_time_on_page: number;
+  avg_time_to_vote: number;
+  bounce_rate: number;
+  return_visitor_rate: number;
+}
+
+interface ViralMetrics {
+  reach_multiplier: number;
+  social_amplification: number;
+  engagement_virality: number;
+}
+
+interface ExportData {
+  poll_info: PollInfo;
+  summary: SummaryMetrics;
+  geographic: {
+    top_countries: string[];
+    detailed_geographic?: unknown;
+  };
+  devices: {
+    device_breakdown: Record<string, number>;
+    browser_breakdown: Record<string, number>;
+    os_breakdown: Record<string, number>;
+  };
+  sharing: {
+    share_breakdown: Record<string, number>;
+    viral_metrics: ViralMetrics;
+  };
+  daily_analytics?: DailyAnalyticsData[];
+}
+
+interface DailyAnalyticsData {
+  date: string;
+  views: number;
+  votes: number;
+  shares: number;
+  completion_rate: number;
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { pollId: string } }
+  { params }: { params: Promise<{ pollId: string }> }
 ) {
   try {
-    const { pollId } = params
+    const { pollId } = await params
     const { searchParams } = new URL(request.url)
 
     const format = searchParams.get('format') || 'csv'
@@ -31,7 +86,7 @@ export async function GET(
     }
 
     // Get daily analytics if date range is specified
-    let dailyData = []
+    const dailyData: DailyAnalyticsData[] = []
     if (start && end) {
       const startDate = new Date(start)
       const endDate = new Date(end)
@@ -41,13 +96,19 @@ export async function GET(
         const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000)
         const dayAnalytics = await getDailyAnalytics(pollId, date)
         if (dayAnalytics) {
-          dailyData.push(dayAnalytics)
+          dailyData.push({
+            date: date.toISOString().split('T')[0],
+            views: dayAnalytics.views || 0,
+            votes: dayAnalytics.votes || 0,
+            shares: dayAnalytics.shares || 0,
+            completion_rate: dayAnalytics.completion_rate || 0
+          })
         }
       }
     }
 
     // Prepare export data
-    const exportData = {
+    const exportData: ExportData = {
       poll_info: {
         id: analytics.poll_id,
         question: analytics.question,
@@ -137,7 +198,7 @@ export async function GET(
   }
 }
 
-function generateCSV(data: any, includeDetails: boolean): string {
+function generateCSV(data: ExportData, includeDetails: boolean): string {
   const rows: string[] = []
 
   // Header
@@ -157,31 +218,33 @@ function generateCSV(data: any, includeDetails: boolean): string {
   rows.push('')
 
   // Device breakdown
-  if (data.devices.device_breakdown) {
+  if (data.devices.device_breakdown && typeof data.devices.device_breakdown === 'object') {
     rows.push('DEVICE BREAKDOWN')
     rows.push('Device Type,Count,Percentage')
-    const total = Object.values(data.devices.device_breakdown).reduce((a: number, b: number) => a + b, 0)
-    Object.entries(data.devices.device_breakdown).forEach(([device, count]) => {
-      const percentage = total > 0 ? ((count as number / total) * 100).toFixed(1) : '0'
+    const deviceEntries = Object.entries(data.devices.device_breakdown) as Array<[string, number]>
+    const total = deviceEntries.reduce((a, [, count]) => a + count, 0)
+    deviceEntries.forEach(([device, count]) => {
+      const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0'
       rows.push(`${device},${count},${percentage}%`)
     })
     rows.push('')
   }
 
   // Browser breakdown
-  if (data.devices.browser_breakdown) {
+  if (data.devices.browser_breakdown && typeof data.devices.browser_breakdown === 'object') {
     rows.push('BROWSER BREAKDOWN')
     rows.push('Browser,Count,Percentage')
-    const total = Object.values(data.devices.browser_breakdown).reduce((a: number, b: number) => a + b, 0)
-    Object.entries(data.devices.browser_breakdown).forEach(([browser, count]) => {
-      const percentage = total > 0 ? ((count as number / total) * 100).toFixed(1) : '0'
+    const browserEntries = Object.entries(data.devices.browser_breakdown) as Array<[string, number]>
+    const total = browserEntries.reduce((a, [, count]) => a + count, 0)
+    browserEntries.forEach(([browser, count]) => {
+      const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0'
       rows.push(`${browser},${count},${percentage}%`)
     })
     rows.push('')
   }
 
   // Geographic data
-  if (data.geographic.top_countries?.length > 0) {
+  if (data.geographic.top_countries && Array.isArray(data.geographic.top_countries)) {
     rows.push('TOP COUNTRIES')
     rows.push('Country Code,Views')
     data.geographic.top_countries.forEach((country: string) => {
@@ -191,22 +254,23 @@ function generateCSV(data: any, includeDetails: boolean): string {
   }
 
   // Sharing breakdown
-  if (data.sharing.share_breakdown) {
+  if (data.sharing.share_breakdown && typeof data.sharing.share_breakdown === 'object') {
     rows.push('SHARING PLATFORMS')
     rows.push('Platform,Shares,Percentage')
-    const total = Object.values(data.sharing.share_breakdown).reduce((a: number, b: number) => a + b, 0)
-    Object.entries(data.sharing.share_breakdown).forEach(([platform, shares]) => {
-      const percentage = total > 0 ? ((shares as number / total) * 100).toFixed(1) : '0'
+    const shareEntries = Object.entries(data.sharing.share_breakdown) as Array<[string, number]>
+    const total = shareEntries.reduce((a, [, shares]) => a + shares, 0)
+    shareEntries.forEach(([platform, shares]) => {
+      const percentage = total > 0 ? ((shares / total) * 100).toFixed(1) : '0'
       rows.push(`${platform},${shares},${percentage}%`)
     })
     rows.push('')
   }
 
   // Daily analytics if included
-  if (includeDetails && data.daily_analytics?.length > 0) {
+  if (includeDetails && data.daily_analytics && Array.isArray(data.daily_analytics)) {
     rows.push('DAILY ANALYTICS')
     rows.push('Date,Views,Votes,Shares,Completion Rate')
-    data.daily_analytics.forEach((day: any) => {
+    data.daily_analytics.forEach((day: DailyAnalyticsData) => {
       rows.push(`${day.date},${day.views || 0},${day.votes || 0},${day.shares || 0},${day.completion_rate || 0}`)
     })
     rows.push('')

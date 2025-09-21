@@ -2,6 +2,8 @@
  * Types for analytics export functionality
  */
 
+import { RawEventsData } from './database';
+
 export type ExportFormat = 'csv' | 'json' | 'xlsx';
 
 export type ExportGranularity = 'summary' | 'detailed' | 'raw';
@@ -28,7 +30,7 @@ export interface ExportRequest {
 
 export interface ExportResponse {
   success: boolean;
-  data?: any;
+  data?: string | Buffer | ExportableAnalyticsData;
   filename: string;
   size: number;
   recordCount: number;
@@ -189,12 +191,7 @@ export interface ExportableAnalyticsData {
     };
   };
 
-  raw_events?: {
-    page_views: Array<any>;
-    votes: Array<any>;
-    shares: Array<any>;
-    clicks: Array<any>;
-  };
+  raw_events?: RawEventsData;
 }
 
 export interface ExportValidationResult {
