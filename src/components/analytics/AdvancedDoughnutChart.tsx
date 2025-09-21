@@ -11,6 +11,9 @@ import {
   ChartData,
   LegendItem,
   Chart,
+  TooltipItem,
+  ChartEvent,
+  ActiveElement,
 } from 'chart.js';
 import { createChartConfig, getCachedColors } from '@/lib/chart-themes';
 import { formatNumber, PerformanceMonitor } from '@/lib/analytics-utils';
@@ -32,6 +35,18 @@ interface AdvancedDoughnutChartProps {
   className?: string;
   onError?: (error: Error) => void;
   onDataClick?: (dataPoint: ChartDataPoint, index: number) => void;
+}
+
+// Chart.js element interface for type safety
+interface ChartElement {
+  hidden?: boolean;
+}
+
+// Legend chart interface
+interface LegendChart extends Chart {
+  getDatasetMeta(datasetIndex: number): {
+    data: ChartElement[];
+  };
 }
 
 const AdvancedDoughnutChart = memo<AdvancedDoughnutChartProps>(({
@@ -112,7 +127,7 @@ const AdvancedDoughnutChart = memo<AdvancedDoughnutChartProps>(({
         duration: 800,
         easing: 'easeInOutCubic',
       } : false,
-      onClick: (event, elements) => {
+      onClick: (event: ChartEvent, elements: ActiveElement[]) => {
         if (elements.length > 0 && onDataClick) {
           const index = elements[0].index;
           const dataPoint = data[index];
@@ -135,14 +150,14 @@ const AdvancedDoughnutChart = memo<AdvancedDoughnutChartProps>(({
             usePointStyle: true,
             pointStyle: 'circle',
           },
-          onClick: (event: any, legendItem: LegendItem, legend: any) => {
+          onClick: (event: ChartEvent, legendItem: LegendItem, legend: Legend) => {
             // Custom legend click handler with type safety
             const index = legendItem.index!;
-            const chart = legend.chart as Chart;
+            const chart = legend.chart as LegendChart;
             const meta = chart.getDatasetMeta(0);
 
             // Type assertion for Chart.js element properties
-            const element = meta.data[index] as any;
+            const element = meta.data[index] as ChartElement;
             element.hidden = !element.hidden;
             chart.update();
           },
@@ -157,12 +172,12 @@ const AdvancedDoughnutChart = memo<AdvancedDoughnutChartProps>(({
           cornerRadius: 8,
           displayColors: true,
           callbacks: {
-            label: (context) => {
+            label: (context: TooltipItem<'doughnut'>) => {
               const label = context.label || '';
               const value = context.raw as number;
               return `${label}: ${formatNumber(value)}`;
             },
-            afterLabel: (context) => {
+            afterLabel: (context: TooltipItem<'doughnut'>) => {
               if (showPercentages && showValues) {
                 const total = (context.dataset.data as number[]).reduce((sum: number, val: number) => sum + val, 0);
                 const percentage = ((context.raw as number / total) * 100).toFixed(1);

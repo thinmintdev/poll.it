@@ -12,6 +12,22 @@ interface ExportUtilityProps {
   className?: string;
 }
 
+// Type for export format selection
+type ExportFormat = 'csv' | 'json';
+
+// Type for chart export format
+type ChartExportFormat = 'png' | 'jpeg';
+
+// Type for chart reference with proper Chart.js structure
+interface ChartRef {
+  current: {
+    canvas?: HTMLCanvasElement;
+    chartInstance?: {
+      canvas: HTMLCanvasElement;
+    };
+  } | null;
+}
+
 const ExportUtility = memo<ExportUtilityProps>(({
   data,
   filename = 'analytics-data',
@@ -19,9 +35,9 @@ const ExportUtility = memo<ExportUtilityProps>(({
   className = '',
 }) => {
   const [isExporting, setIsExporting] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('csv');
 
-  const handleExport = useCallback(async (format: 'csv' | 'json') => {
+  const handleExport = useCallback(async (format: ExportFormat) => {
     try {
       setIsExporting(true);
 
@@ -52,7 +68,7 @@ const ExportUtility = memo<ExportUtilityProps>(({
     }
   }, [data, filename]);
 
-  const handleChartExport = useCallback(async (chartRef: React.RefObject<any>, format: 'png' | 'jpeg') => {
+  const handleChartExport = useCallback(async (chartRef: ChartRef, format: ChartExportFormat) => {
     if (!chartRef.current) return;
 
     try {

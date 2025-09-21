@@ -56,18 +56,25 @@ ChartErrorBoundary.displayName = 'ChartErrorBoundary';
 // Chart type definitions
 export type ChartType = 'doughnut' | 'timeseries' | 'heatmap' | 'bar' | 'map';
 
+// Generic props interface for chart data
+interface BaseChartProps {
+  data: unknown;
+  options?: unknown;
+  onError?: (error: Error) => void;
+}
+
 interface LazyChartProps {
   type: ChartType;
-  data: any;
-  options?: any;
+  data: unknown;
+  options?: unknown;
   className?: string;
   loading?: boolean;
   error?: string | null;
   onError?: (error: Error) => void;
 }
 
-// Chart component registry
-const CHART_COMPONENTS: Record<ChartType, ComponentType<any>> = {
+// Chart component registry with proper typing
+const CHART_COMPONENTS: Record<ChartType, ComponentType<BaseChartProps>> = {
   doughnut: AdvancedDoughnutChart,
   timeseries: TimeSeriesChart,
   heatmap: GeographicHeatMap,

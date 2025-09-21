@@ -4,17 +4,106 @@ import React, { useState } from 'react'
 import { Line, Bar } from 'react-chartjs-2'
 import { Activity, BarChart3, Clock, MousePointer, Eye, Users } from 'lucide-react'
 import { AnalyticsData } from '@/types/poll'
+import { TooltipItem } from 'chart.js'
 
 interface EngagementChartProps {
   analytics: AnalyticsData
 }
 
+// Type for timeframe selection
+type TimeframeType = '24h' | '7d' | '30d';
+
+// Type for chart type selection
+type ChartType = 'line' | 'bar';
+
+// Type for daily analytics data
+interface DailyAnalytics {
+  date: string;
+  views: number;
+  votes: number;
+  shares: number;
+}
+
+// Type for engagement metrics
+interface EngagementMetric {
+  label: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+  color: string;
+}
+
+// Type for chart dataset
+interface ChartDataset {
+  label: string;
+  data: number[];
+  borderColor: string;
+  backgroundColor: string;
+  fill: boolean;
+  tension: number;
+}
+
+// Type for chart data
+interface ChartData {
+  labels: string[];
+  datasets: ChartDataset[];
+}
+
+// Type for chart options
+interface ChartOptions {
+  responsive: boolean;
+  maintainAspectRatio: boolean;
+  plugins: {
+    legend: {
+      display: boolean;
+    };
+    tooltip: {
+      backgroundColor: string;
+      titleColor: string;
+      bodyColor: string;
+      borderColor: string;
+      borderWidth: number;
+      cornerRadius: number;
+      displayColors: boolean;
+      callbacks: {
+        label: (context: TooltipItem<'line' | 'bar'>) => string;
+      };
+    };
+  };
+  scales: {
+    x: {
+      grid: {
+        color: string;
+        drawBorder: boolean;
+      };
+      ticks: {
+        color: string;
+        maxTicksLimit: number;
+      };
+    };
+    y: {
+      grid: {
+        color: string;
+        drawBorder: boolean;
+      };
+      ticks: {
+        color: string;
+        callback: (value: number | string) => string;
+      };
+    };
+  };
+  interaction: {
+    intersect: boolean;
+    mode: 'index';
+  };
+}
+
 export const EngagementChart: React.FC<EngagementChartProps> = ({ analytics }) => {
-  const [chartType, setChartType] = useState<'line' | 'bar'>('line')
-  const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d'>('7d')
+  const [chartType, setChartType] = useState<ChartType>('line')
+  const [timeframe, setTimeframe] = useState<TimeframeType>('7d')
 
   // Generate hourly data for 24h view
-  const generateHourlyData = () => {
+  const generateHourlyData = (): number[] => {
     const hours = Array.from({ length: 24 }, (_, i) => i)
     const baseViews = analytics.total_views / 24
     const peakHour = analytics.peak_hour
@@ -27,7 +116,7 @@ export const EngagementChart: React.FC<EngagementChartProps> = ({ analytics }) =
   }
 
   // Prepare chart data based on timeframe
-  const getChartData = () => {
+  const getChartData = (): ChartData => {
     if (timeframe === '24h') {
       const hourlyViews = generateHourlyData()
       const hourlyVotes = hourlyViews.map(views => Math.round(views * analytics.completion_rate * (0.8 + Math.random() * 0.4)))
@@ -56,7 +145,7 @@ export const EngagementChart: React.FC<EngagementChartProps> = ({ analytics }) =
     }
 
     // Use daily analytics for 7d and 30d
-    const dailyData = analytics.daily_analytics || []
+    const dailyData: DailyAnalytics[] = analytics.daily_analytics || []
     const filteredData = timeframe === '7d' ? dailyData.slice(-7) : dailyData.slice(-30)
 
     return {
@@ -95,7 +184,7 @@ export const EngagementChart: React.FC<EngagementChartProps> = ({ analytics }) =
     }
   }
 
-  const chartOptions = {
+  const chartOptions: ChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -111,7 +200,7 @@ export const EngagementChart: React.FC<EngagementChartProps> = ({ analytics }) =
         cornerRadius: 8,
         displayColors: true,
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'line' | 'bar'>) => {
             const label = context.dataset.label || ''
             const value = context.parsed.y
             return `${label}: ${value.toLocaleString()}`
@@ -137,18 +226,18 @@ export const EngagementChart: React.FC<EngagementChartProps> = ({ analytics }) =
         },
         ticks: {
           color: 'var(--text-muted)',
-          callback: (value: any) => value.toLocaleString()
+          callback: (value: number | string) => (value as number).toLocaleString()
         }
       }
     },
     interaction: {
       intersect: false,
-      mode: 'index' as const
+      mode: 'index'
     }
   }
 
   // Calculate engagement metrics
-  const engagementMetrics = [
+  const engagementMetrics: EngagementMetric[] = [
     {
       label: 'Click-through Rate',
       value: `${((analytics.total_votes / analytics.total_views) * 100).toFixed(2)}%`,
@@ -223,7 +312,7 @@ export const EngagementChart: React.FC<EngagementChartProps> = ({ analytics }) =
               ].map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => setTimeframe(option.value as any)}
+                  onClick={() => setTimeframe(option.value as TimeframeType)}
                   className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
                     timeframe === option.value
                       ? 'bg-cotton-blue text-white'

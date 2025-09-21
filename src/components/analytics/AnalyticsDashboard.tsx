@@ -14,8 +14,7 @@ import {
   PointElement,
   Filler
 } from 'chart.js'
-import { Bar, Doughnut, Line } from 'react-chartjs-2'
-import { Calendar, Download, Eye, Users, Vote, Share2, Clock, TrendingUp, MapPin, Smartphone, Globe, BarChart3 } from 'lucide-react'
+import { Calendar, Download, Eye, Users, Vote, Share2, Clock, TrendingUp, MapPin, Smartphone, BarChart3 } from 'lucide-react'
 import { AnalyticsData, ExportData } from '@/types/poll'
 import { AnalyticsOverview } from './AnalyticsOverview'
 import { EngagementChart } from './EngagementChart'

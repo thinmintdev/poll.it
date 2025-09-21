@@ -4,16 +4,88 @@ import React, { useState } from 'react'
 import { Bar } from 'react-chartjs-2'
 import { MapPin, Globe, TrendingUp, Users, Eye } from 'lucide-react'
 import { AnalyticsData } from '@/types/poll'
+import { TooltipItem } from 'chart.js'
 
 interface GeographicMapProps {
   analytics: AnalyticsData
 }
 
+// Type for view selection
+type ViewType = 'countries' | 'regions';
+
+// Type for geographic data structure
+interface GeographicDataItem {
+  country_code: string;
+  country_name: string;
+  views: number;
+  votes: number;
+  completion_rate: number;
+}
+
+// Type for chart dataset
+interface ChartDataset {
+  label: string;
+  data: number[];
+  backgroundColor: string;
+  borderColor: string;
+  borderWidth: number;
+}
+
+// Type for chart data
+interface ChartData {
+  labels: string[];
+  datasets: ChartDataset[];
+}
+
+// Type for chart options
+interface ChartOptions {
+  responsive: boolean;
+  maintainAspectRatio: boolean;
+  plugins: {
+    legend: {
+      display: boolean;
+    };
+    tooltip: {
+      backgroundColor: string;
+      titleColor: string;
+      bodyColor: string;
+      borderColor: string;
+      borderWidth: number;
+      cornerRadius: number;
+      callbacks: {
+        label: (context: TooltipItem<'bar'>) => string;
+      };
+    };
+  };
+  scales: {
+    x: {
+      grid: {
+        color: string;
+        drawBorder: boolean;
+      };
+      ticks: {
+        color: string;
+        maxRotation: number;
+      };
+    };
+    y: {
+      grid: {
+        color: string;
+        drawBorder: boolean;
+      };
+      ticks: {
+        color: string;
+        callback: (value: number | string) => string;
+      };
+    };
+  };
+}
+
 export const GeographicMap: React.FC<GeographicMapProps> = ({ analytics }) => {
-  const [viewType, setViewType] = useState<'countries' | 'regions'>('countries')
+  const [viewType, setViewType] = useState<ViewType>('countries')
 
   // Mock geographic data - in a real app this would come from the analytics
-  const geographicData = analytics.geographic_data || [
+  const geographicData: GeographicDataItem[] = analytics.geographic_data || [
     { country_code: 'US', country_name: 'United States', views: Math.round(analytics.total_views * 0.35), votes: Math.round(analytics.total_votes * 0.4), completion_rate: 0.75 },
     { country_code: 'CA', country_name: 'Canada', views: Math.round(analytics.total_views * 0.15), votes: Math.round(analytics.total_votes * 0.18), completion_rate: 0.82 },
     { country_code: 'GB', country_name: 'United Kingdom', views: Math.round(analytics.total_views * 0.12), votes: Math.round(analytics.total_votes * 0.15), completion_rate: 0.78 },
@@ -31,7 +103,7 @@ export const GeographicMap: React.FC<GeographicMapProps> = ({ analytics }) => {
     .slice(0, 10)
 
   // Prepare chart data
-  const chartData = {
+  const chartData: ChartData = {
     labels: topCountries.map(country => country.country_name),
     datasets: [
       {
@@ -51,7 +123,7 @@ export const GeographicMap: React.FC<GeographicMapProps> = ({ analytics }) => {
     ]
   }
 
-  const chartOptions = {
+  const chartOptions: ChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -66,7 +138,7 @@ export const GeographicMap: React.FC<GeographicMapProps> = ({ analytics }) => {
         borderWidth: 1,
         cornerRadius: 8,
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'bar'>) => {
             const label = context.dataset.label || ''
             const value = context.parsed.y
             return `${label}: ${value.toLocaleString()}`
@@ -92,14 +164,14 @@ export const GeographicMap: React.FC<GeographicMapProps> = ({ analytics }) => {
         },
         ticks: {
           color: 'var(--text-muted)',
-          callback: (value: any) => value.toLocaleString()
+          callback: (value: number | string) => (value as number).toLocaleString()
         }
       }
     }
   }
 
   // Get flag emoji for country code
-  const getFlagEmoji = (countryCode: string) => {
+  const getFlagEmoji = (countryCode: string): string => {
     const flagMap: Record<string, string> = {
       'US': '🇺🇸', 'CA': '🇨🇦', 'GB': '🇬🇧', 'DE': '🇩🇪', 'FR': '🇫🇷',
       'AU': '🇦🇺', 'JP': '🇯🇵', 'BR': '🇧🇷', 'IN': '🇮🇳', 'ES': '🇪🇸',
@@ -307,6 +379,47 @@ export const GeographicMap: React.FC<GeographicMapProps> = ({ analytics }) => {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Technical Insights */}
+      <div className="glass-card rounded-xl p-6">
+        <h4 className="text-lg font-semibold text-app-primary mb-6">Technical Insights</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            {
+              label: 'Mobile-First Design',
+              description: 'Optimize for mobile users',
+              recommendation: (topCountries[0]?.views || 0) > analytics.total_views * 0.6 ? 'Critical' : 'Important',
+              color: (topCountries[0]?.views || 0) > analytics.total_views * 0.6 ? 'cotton-pink' : 'cotton-blue'
+            },
+            {
+              label: 'Cross-Browser Testing',
+              description: 'Test on multiple browsers',
+              recommendation: Object.keys(geographicData).length > 3 ? 'Required' : 'Optional',
+              color: Object.keys(geographicData).length > 3 ? 'cotton-purple' : 'cotton-mint'
+            },
+            {
+              label: 'Responsive Design',
+              description: 'Works on all screen sizes',
+              recommendation: 'Essential',
+              color: 'cotton-peach'
+            },
+            {
+              label: 'Performance Focus',
+              description: 'Mobile performance priority',
+              recommendation: (topCountries[0]?.views || 0) > (topCountries[1]?.views || 0) ? 'High' : 'Medium',
+              color: (topCountries[0]?.views || 0) > (topCountries[1]?.views || 0) ? 'cotton-lavender' : 'cotton-mint'
+            }
+          ].map((insight, index) => (
+            <div key={index} className="p-4 bg-app-surface rounded-lg">
+              <div className={`text-sm font-medium text-${insight.color} mb-2`}>
+                {insight.recommendation}
+              </div>
+              <div className="font-semibold text-app-primary mb-1">{insight.label}</div>
+              <div className="text-sm text-app-muted">{insight.description}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

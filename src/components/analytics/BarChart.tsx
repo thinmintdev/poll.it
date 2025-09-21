@@ -15,7 +15,7 @@ import {
   LinearScaleOptions,
   CategoryScaleOptions,
 } from 'chart.js';
-import { createChartConfig, getCachedColors } from '@/lib/chart-themes';
+import { getCachedColors } from '@/lib/chart-themes';
 import { formatNumber, PerformanceMonitor } from '@/lib/analytics-utils';
 import { ChartDataPoint } from '@/types/analytics';
 import classNames from 'classnames';

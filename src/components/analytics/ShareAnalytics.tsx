@@ -4,16 +4,114 @@ import React, { useState } from 'react'
 import { Bar, Line } from 'react-chartjs-2'
 import { Share2, Twitter, Facebook, Linkedin, Link, TrendingUp, Users, Copy, MessageCircle, Smartphone } from 'lucide-react'
 import { AnalyticsData } from '@/types/poll'
+import { TooltipItem } from 'chart.js'
 
 interface ShareAnalyticsProps {
   analytics: AnalyticsData
 }
 
+// Type for timeframe selection
+type TimeframeType = '7d' | '30d' | 'all';
+
+// Type for share data structure
+interface ShareData {
+  twitter: number;
+  facebook: number;
+  linkedin: number;
+  copy_link: number;
+  direct: number;
+}
+
+// Type for viral metrics
+interface ViralMetrics {
+  reach_multiplier: number;
+  social_amplification: number;
+  engagement_virality: number;
+  share_to_conversion: number;
+}
+
+// Type for timeline data item
+interface TimelineDataItem {
+  date: string;
+  shares: number;
+  viral_reach: number;
+}
+
+// Type for chart dataset
+interface ChartDataset {
+  label: string;
+  data: number[];
+  borderColor: string;
+  backgroundColor: string;
+  fill: boolean;
+  tension: number;
+  borderRadius?: number;
+  borderSkipped?: boolean;
+}
+
+// Type for chart data
+interface ChartData {
+  labels: string[];
+  datasets: ChartDataset[];
+}
+
+// Type for chart options
+interface ChartOptions {
+  responsive: boolean;
+  maintainAspectRatio: boolean;
+  plugins: {
+    legend: {
+      display: boolean;
+    };
+    tooltip: {
+      backgroundColor: string;
+      titleColor: string;
+      bodyColor: string;
+      borderColor: string;
+      borderWidth: number;
+      cornerRadius: number;
+    };
+  };
+  scales: {
+    x: {
+      grid: {
+        color: string;
+        drawBorder: boolean;
+      };
+      ticks: {
+        color: string;
+        maxTicksLimit: number;
+      };
+    };
+    y: {
+      grid: {
+        color: string;
+        drawBorder: boolean;
+      };
+      ticks: {
+        color: string;
+        callback: (value: number | string) => string;
+      };
+    };
+  };
+}
+
+// Type for platform performance item
+interface PlatformPerformanceItem {
+  platform: string;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  shares: number;
+  clickThrough: number;
+  conversionRate: number;
+  reach: number;
+  color: string;
+}
+
 export const ShareAnalytics: React.FC<ShareAnalyticsProps> = ({ analytics }) => {
-  const [timeframe, setTimeframe] = useState<'7d' | '30d' | 'all'>('30d')
+  const [timeframe, setTimeframe] = useState<TimeframeType>('30d')
 
   // Share platform data
-  const shareData = analytics.share_breakdown || {
+  const shareData: ShareData = analytics.share_breakdown || {
     twitter: Math.round(analytics.total_shares * 0.35),
     facebook: Math.round(analytics.total_shares * 0.25),
     linkedin: Math.round(analytics.total_shares * 0.15),
@@ -22,7 +120,7 @@ export const ShareAnalytics: React.FC<ShareAnalyticsProps> = ({ analytics }) => 
   }
 
   // Generate viral metrics
-  const viralMetrics = {
+  const viralMetrics: ViralMetrics = {
     reach_multiplier: analytics.viral_coefficient,
     social_amplification: (analytics.total_shares / analytics.total_votes) || 0,
     engagement_virality: (analytics.total_shares / analytics.total_views) || 0,
@@ -30,7 +128,7 @@ export const ShareAnalytics: React.FC<ShareAnalyticsProps> = ({ analytics }) => 
   }
 
   // Prepare chart data for sharing platforms
-  const platformChartData = {
+  const platformChartData: ChartData = {
     labels: ['Twitter', 'Facebook', 'LinkedIn', 'Copy Link', 'Direct'],
     datasets: [{
       label: 'Shares',
@@ -42,13 +140,16 @@ export const ShareAnalytics: React.FC<ShareAnalyticsProps> = ({ analytics }) => 
         'var(--cotton-candy-purple)', // Copy link
         'var(--cotton-candy-mint)' // Direct
       ],
+      borderColor: '#transparent',
       borderRadius: 8,
-      borderSkipped: false
+      borderSkipped: false,
+      fill: false,
+      tension: 0
     }]
   }
 
   // Generate share timeline data
-  const generateShareTimeline = () => {
+  const generateShareTimeline = (): TimelineDataItem[] => {
     const days = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : 90
     const baseShares = analytics.total_shares / days
 
@@ -66,7 +167,7 @@ export const ShareAnalytics: React.FC<ShareAnalyticsProps> = ({ analytics }) => 
 
   const timelineData = generateShareTimeline()
 
-  const shareTimelineChart = {
+  const shareTimelineChart: ChartData = {
     labels: timelineData.map(d => d.date),
     datasets: [
       {
@@ -88,7 +189,7 @@ export const ShareAnalytics: React.FC<ShareAnalyticsProps> = ({ analytics }) => 
     ]
   }
 
-  const chartOptions = {
+  const chartOptions: ChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -122,14 +223,14 @@ export const ShareAnalytics: React.FC<ShareAnalyticsProps> = ({ analytics }) => 
         },
         ticks: {
           color: 'var(--text-muted)',
-          callback: (value: any) => value.toLocaleString()
+          callback: (value: number | string) => (value as number).toLocaleString()
         }
       }
     }
   }
 
   // Platform performance data
-  const platformPerformance = [
+  const platformPerformance: PlatformPerformanceItem[] = [
     {
       platform: 'Twitter',
       icon: Twitter,
@@ -246,7 +347,7 @@ export const ShareAnalytics: React.FC<ShareAnalyticsProps> = ({ analytics }) => 
             ].map((option) => (
               <button
                 key={option.value}
-                onClick={() => setTimeframe(option.value as any)}
+                onClick={() => setTimeframe(option.value as TimeframeType)}
                 className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${
                   timeframe === option.value
                     ? 'bg-cotton-blue text-white'

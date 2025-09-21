@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Line, Bar } from 'react-chartjs-2'
+import { Line } from 'react-chartjs-2'
 import { TrendingUp, TrendingDown, Activity, Users, Timer, Globe } from 'lucide-react'
 import { AnalyticsData } from '@/types/poll'
 import type { ChartOptions } from 'chart.js'

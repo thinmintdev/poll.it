@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Doughnut, Bar } from 'react-chartjs-2'
+import { Doughnut } from 'react-chartjs-2'
 import {
   Smartphone,
   Monitor,
@@ -11,23 +11,103 @@ import {
   // Apple and Windows don't exist either, using alternatives
 } from 'lucide-react'
 import { AnalyticsData } from '@/types/poll'
+import { TooltipItem } from 'chart.js'
 
 interface DeviceBreakdownProps {
   analytics: AnalyticsData
 }
 
+// Type for device data structure
+interface DeviceData {
+  mobile: number;
+  desktop: number;
+  tablet: number;
+}
+
+// Type for browser data structure
+interface BrowserData {
+  chrome: number;
+  safari: number;
+  firefox: number;
+  edge: number;
+  other: number;
+}
+
+// Type for OS data structure
+interface OSData {
+  ios: number;
+  android: number;
+  windows: number;
+  macos: number;
+  linux: number;
+}
+
+// Type for view selection
+type ViewType = 'device' | 'browser' | 'os';
+
+// Type for chart dataset
+interface ChartDataset {
+  data: number[];
+  backgroundColor: string[];
+  borderWidth: number;
+  hoverOffset: number;
+}
+
+// Type for chart data
+interface ChartData {
+  labels: string[];
+  datasets: ChartDataset[];
+}
+
+// Type for chart options
+interface ChartOptions {
+  responsive: boolean;
+  maintainAspectRatio: boolean;
+  plugins: {
+    legend: {
+      position: 'bottom';
+      labels: {
+        color: string;
+        padding: number;
+        font: {
+          size: number;
+        };
+      };
+    };
+    tooltip: {
+      backgroundColor: string;
+      titleColor: string;
+      bodyColor: string;
+      borderColor: string;
+      borderWidth: number;
+      cornerRadius: number;
+      callbacks: {
+        label: (context: TooltipItem<'doughnut'>) => string;
+      };
+    };
+  };
+}
+
+// Type for current data item
+interface DataItem {
+  name: string;
+  value: number;
+  icon: React.ComponentType<{ className?: string }>;
+  percentage: number;
+}
+
 export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) => {
-  const [activeView, setActiveView] = useState<'device' | 'browser' | 'os'>('device')
+  const [activeView, setActiveView] = useState<ViewType>('device')
 
   // Device breakdown data
-  const deviceData = analytics.device_breakdown || {
+  const deviceData: DeviceData = analytics.device_breakdown || {
     mobile: Math.round(analytics.total_views * 0.65),
     desktop: Math.round(analytics.total_views * 0.30),
     tablet: Math.round(analytics.total_views * 0.05)
   }
 
   // Browser breakdown data
-  const browserData = analytics.browser_breakdown || {
+  const browserData: BrowserData = analytics.browser_breakdown || {
     chrome: Math.round(analytics.total_views * 0.45),
     safari: Math.round(analytics.total_views * 0.25),
     firefox: Math.round(analytics.total_views * 0.15),
@@ -36,7 +116,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
   }
 
   // OS breakdown data
-  const osData = analytics.os_breakdown || {
+  const osData: OSData = analytics.os_breakdown || {
     ios: Math.round(analytics.total_views * 0.35),
     android: Math.round(analytics.total_views * 0.30),
     windows: Math.round(analytics.total_views * 0.25),
@@ -45,7 +125,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
   }
 
   // Chart configurations
-  const getChartData = () => {
+  const getChartData = (): ChartData => {
     switch (activeView) {
       case 'device':
         return {
@@ -98,12 +178,12 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
     }
   }
 
-  const chartOptions = {
+  const chartOptions: ChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'bottom' as const,
+        position: 'bottom',
         labels: {
           color: 'var(--text-muted)',
           padding: 20,
@@ -120,7 +200,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
         borderWidth: 1,
         cornerRadius: 8,
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'doughnut'>) => {
             const label = context.label || ''
             const value = context.parsed
             const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
@@ -133,7 +213,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
   }
 
   // Device icons mapping
-  const getDeviceIcon = (device: string) => {
+  const getDeviceIcon = (device: string): React.ComponentType<{ className?: string }> => {
     switch (device.toLowerCase()) {
       case 'mobile': return Smartphone
       case 'desktop': return Monitor
@@ -143,7 +223,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
   }
 
   // Browser icons mapping (using available icons as fallbacks)
-  const getBrowserIcon = (browser: string) => {
+  const getBrowserIcon = (browser: string): React.ComponentType<{ className?: string }> => {
     switch (browser.toLowerCase()) {
       case 'chrome':
       case 'firefox':
@@ -155,7 +235,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
   }
 
   // OS icons mapping (using available icons as fallbacks)
-  const getOSIcon = (os: string) => {
+  const getOSIcon = (os: string): React.ComponentType<{ className?: string }> => {
     switch (os.toLowerCase()) {
       case 'ios':
       case 'macos':
@@ -168,7 +248,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
   }
 
   // Get current data and icons based on active view
-  const getCurrentData = () => {
+  const getCurrentData = (): DataItem[] => {
     switch (activeView) {
       case 'device':
         return Object.entries(deviceData).map(([key, value]) => ({
@@ -257,7 +337,7 @@ export const DeviceBreakdown: React.FC<DeviceBreakdownProps> = ({ analytics }) =
             ].map((option) => (
               <button
                 key={option.value}
-                onClick={() => setActiveView(option.value as any)}
+                onClick={() => setActiveView(option.value as ViewType)}
                 className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all ${
                   activeView === option.value
                     ? 'bg-gradient-primary text-white'

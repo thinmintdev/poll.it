@@ -14,11 +14,13 @@ import {
   Filler,
   ChartOptions,
   ChartData,
-  CartesianScaleOptions,
   LinearScaleOptions,
   CategoryScaleOptions,
+  TooltipItem,
+  ChartEvent,
+  ActiveElement,
 } from 'chart.js';
-import { createChartConfig, getCachedColors, getGradientColors } from '@/lib/chart-themes';
+import { getCachedColors, getGradientColors } from '@/lib/chart-themes';
 import { formatNumber, formatDate, PerformanceMonitor } from '@/lib/analytics-utils';
 import { TimeSeriesDataPoint } from '@/types/analytics';
 import classNames from 'classnames';
@@ -49,6 +51,21 @@ interface TimeSeriesChartProps {
   onError?: (error: Error) => void;
   onDataClick?: (dataPoint: TimeSeriesDataPoint, index: number) => void;
 }
+
+// Chart context interface for gradient creation
+interface ChartContext {
+  chart: ChartJS;
+  ctx: CanvasRenderingContext2D;
+  chartArea: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
+}
+
+// Background color function type
+type BackgroundColorFunction = (context: ChartContext) => string | CanvasGradient;
 
 const TimeSeriesChart = memo<TimeSeriesChartProps>(({
   data,
@@ -97,11 +114,18 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
     const primaryColor = colors[0];
 
     // Create gradient for area fill
-    const createGradient = (ctx: CanvasRenderingContext2D, chartArea: any) => {
+    const createGradient = (ctx: CanvasRenderingContext2D, chartArea: ChartContext['chartArea']): CanvasGradient => {
       return getGradientColors(ctx, chartArea, [
         primaryColor.replace(')', ', 0.3)').replace('rgb', 'rgba'),
         primaryColor.replace(')', ', 0.0)').replace('rgb', 'rgba'),
       ]);
+    };
+
+    const backgroundColorFunction: BackgroundColorFunction = (context: ChartContext) => {
+      const chart = context.chart;
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return 'transparent';
+      return createGradient(ctx, chartArea);
     };
 
     const result = {
@@ -111,12 +135,7 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
           label: title || 'Data',
           data: values,
           borderColor: primaryColor,
-          backgroundColor: showArea ? (context: any) => {
-            const chart = context.chart;
-            const { ctx, chartArea } = chart;
-            if (!chartArea) return 'transparent';
-            return createGradient(ctx, chartArea);
-          } : 'transparent',
+          backgroundColor: showArea ? backgroundColorFunction : 'transparent',
           borderWidth: 3,
           pointBackgroundColor: primaryColor,
           pointBorderColor: '#ffffff',
@@ -136,22 +155,8 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
 
   // Memoized chart options
   const chartOptions = useMemo((): ChartOptions<'line'> => {
-    const baseOptions = createChartConfig('line', theme, {
-      responsive: true,
-      maintainAspectRatio: false,
-      animations: animate,
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        enabled: true,
-        format: 'value',
-      },
-    });
-
     // Create properly typed scales configuration
     const xScale: CategoryScaleOptions = {
-      ...(baseOptions.scales?.x as CategoryScaleOptions),
       type: 'category',
       grid: {
         display: showGrid,
@@ -165,7 +170,6 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
     };
 
     const yScale: LinearScaleOptions = {
-      ...(baseOptions.scales?.y as LinearScaleOptions),
       type: 'linear',
       beginAtZero: true,
       grid: {
@@ -173,7 +177,7 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
         color: 'var(--border-light)',
       },
       ticks: {
-        callback: function(value) {
+        callback: function(value: string | number): string {
           return formatNumber(value as number, 'compact');
         },
         color: 'var(--text-secondary)',
@@ -187,7 +191,7 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
         duration: 800,
         easing: 'easeInOutCubic',
       } : false,
-      onClick: (event, elements) => {
+      onClick: (event: ChartEvent, elements: ActiveElement[]) => {
         if (elements.length > 0 && onDataClick) {
           const index = elements[0].index;
           const dataPoint = data[index];
@@ -214,10 +218,10 @@ const TimeSeriesChart = memo<TimeSeriesChartProps>(({
           cornerRadius: 8,
           displayColors: true,
           callbacks: {
-            title: (context) => {
+            title: (context: TooltipItem<'line'>[]) => {
               return context[0].label;
             },
-            label: (context) => {
+            label: (context: TooltipItem<'line'>) => {
               const value = context.raw as number;
               return `${context.dataset.label}: ${formatNumber(value)}`;
             },
