@@ -407,7 +407,9 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
             <div className="card">
               <div className="mb-6">
                 <h2 className="text-app-primary text-xl font-bold">{hasVoted ? 'Results' : 'Cast Your Vote'}</h2>
-                <p className="text-app-muted text-sm">by a guest • {hasVoted ? 'just now' : '4 minutes ago'}</p>
+                <p className="text-app-muted text-sm">
+                  by {poll?.creator_name || 'a guest'} • {poll?.created_at ? new Date(poll.created_at).toLocaleDateString() : ''}
+                </p>
               </div>
               <ImagePollVoting
                 poll={poll}
@@ -426,13 +428,59 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
           ) : (
             /* Text Poll - Two Column Layout */
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Column: Poll Choices Only */}
+              {/* Left Column: Chart + Vote/Results */}
               <div className="space-y-8">
-                {/* Poll Voting Card */}
+                {/* Chart Panel */}
+                <div className="card">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <span className="text-app-primary font-semibold text-lg">Chart</span>
+                    </div>
+                    <div className="flex justify-center gap-2 bg-app-surface p-1 rounded-lg">
+                      <button
+                        onClick={() => setChartType('doughnut')}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                          chartType === 'doughnut' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
+                        }`}
+                      >
+                        Pie
+                      </button>
+                      <button
+                        onClick={() => setChartType('bar')}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                          chartType === 'bar' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
+                        }`}
+                      >
+                        Bar
+                      </button>
+                    </div>
+                  </div>
+                  <div className="h-[320px]">
+                    <PollChart
+                      key={`${chartType}-${results?.totalVotes || 0}`}
+                      results={poll?.options.map((option) => {
+                        const result = results?.results.find(r => r.option === option)
+                        return {
+                          option,
+                          votes: result?.votes || 0,
+                          percentage: result?.percentage || 0
+                        }
+                      }) || []}
+                      type={chartType}
+                    />
+                  </div>
+                </div>
+
+                {/* Vote/Results Card */}
                 <div className="card">
                   <div className="mb-6">
                     <h2 className="text-app-primary text-xl font-bold">{hasVoted ? 'Results' : 'Cast Your Vote'}</h2>
-                    <p className="text-app-muted text-sm">by a guest • {hasVoted ? 'just now' : '4 minutes ago'}</p>
+                    <p className="text-app-muted text-sm">
+                      by {poll?.creator_name || 'a guest'} • {poll?.created_at ? new Date(poll.created_at).toLocaleDateString() : ''}
+                    </p>
                   </div>
 
                   {!hasVoted ? (
@@ -617,58 +665,12 @@ export default function PollPageClient({ id, forceResults = false }: PollPageCli
                 </div>
               </div>
 
-              {/* Right Column: Charts + Stats + Discussion */}
+              {/* Right Column: Stats + Discussion */}
               <div className="space-y-8">
-                {/* Chart Panel */}
-                <div className="card">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <svg className="w-6 h-6 text-app-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <span className="text-app-primary font-semibold text-lg">Chart</span>
-                    </div>
-                    <div className="flex justify-center gap-2 bg-app-surface p-1 rounded-lg">
-                      <button
-                        onClick={() => setChartType('doughnut')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          chartType === 'doughnut' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
-                        }`}
-                      >
-                        Pie
-                      </button>
-                      <button
-                        onClick={() => setChartType('bar')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          chartType === 'bar' ? 'bg-app-tertiary text-app-primary' : 'text-app-secondary hover:text-app-primary'
-                        }`}
-                      >
-                        Bar
-                      </button>
-                    </div>
-                  </div>
-                  <div className="h-[320px]">
-                    <PollChart
-                      key={`${chartType}-${results?.totalVotes || 0}`}
-                      results={poll?.options.map((option) => {
-                        const result = results?.results.find(r => r.option === option)
-                        return {
-                          option,
-                          votes: result?.votes || 0,
-                          percentage: result?.percentage || 0
-                        }
-                      }) || []}
-                      type={chartType}
-                    />
-                  </div>
-                </div>
-
                 {/* Stats Panel */}
                 <PollStats
                   pollId={id}
                   results={results}
-                  views={1234} // TODO: Implement view tracking
-                  shares={89}  // TODO: Implement share tracking
                   isLive={true}
                 />
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { User } from 'next-auth'
@@ -31,8 +32,14 @@ interface UserDashboardProps {
   }
 }
 
+const validTabs = ['overview', 'polls', 'settings'] as const
+type Tab = typeof validTabs[number]
+
 export default function UserDashboard({ user, polls, stats }: UserDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'polls' | 'settings'>('overview')
+  const searchParams = useSearchParams()
+  const tabParam = searchParams?.get('tab')
+  const initialTab: Tab = tabParam && validTabs.includes(tabParam as Tab) ? (tabParam as Tab) : 'overview'
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab)
 
   return (
     <div className="space-y-6">

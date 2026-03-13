@@ -11,7 +11,13 @@ export async function GET(
     const { id } = await params
     const session = await getServerSession(authOptions)
 
-    const result = await query('SELECT * FROM polls WHERE id = $1', [id])
+    const result = await query(
+      `SELECT p.*, u.name as creator_name
+       FROM polls p
+       LEFT JOIN users u ON p.user_id = u.id
+       WHERE p.id = $1`,
+      [id]
+    )
     const poll = result.rows[0]
 
     if (!poll) {

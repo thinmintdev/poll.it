@@ -97,7 +97,10 @@ export default function Comments({ pollId, commentsEnabled }: CommentsProps) {
 
     socket.on('newComment', (comment: Comment) => {
       console.log('Received new comment:', comment)
-      setComments(prev => [...prev, comment])
+      setComments(prev => {
+        if (prev.some(c => c.id === comment.id)) return prev
+        return [...prev, comment]
+      })
     })
 
     socket.on('disconnect', (reason) => {
@@ -145,7 +148,14 @@ export default function Comments({ pollId, commentsEnabled }: CommentsProps) {
         throw new Error(errorData.error || 'Failed to post comment')
       }
 
-      // Comment will be added via Socket.IO
+      // Optimistic local update — add the comment immediately
+      const data = await response.json()
+      if (data.comment) {
+        setComments(prev => {
+          if (prev.some(c => c.id === data.comment.id)) return prev
+          return [...prev, data.comment]
+        })
+      }
       setNewComment('')
       adjustTextareaHeight()
     } catch (err) {
@@ -334,7 +344,7 @@ export default function Comments({ pollId, commentsEnabled }: CommentsProps) {
           </form>
         ) : (
           <div className="text-center py-4">
-            <p className="text-app-muted text-sm mb-3"><a href="/auth/signin">s</a>Sign in to join the conversation</p>
+            <p className="text-app-muted text-sm mb-3">Sign in to join the conversation</p>
             <button
               onClick={() => window.location.href = '/auth/signin'}
               className="btn-secondary text-sm"

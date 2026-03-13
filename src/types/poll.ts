@@ -10,6 +10,7 @@ export interface Poll {
   comments_enabled?: boolean
   hide_results?: 'none' | 'until_vote' | 'entirely'
   user_id?: string | null
+  creator_name?: string | null
   is_public?: boolean
   allow_anonymous_voting?: boolean
   created_at: string

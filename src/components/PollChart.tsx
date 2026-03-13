@@ -219,6 +219,7 @@ export default function PollChart({ results, type = 'doughnut' }: PollChartProps
     // Accessibility improvements
     plugins: {
       legend: {
+        display: type !== 'bar',
         position: 'bottom' as const,
         labels: {
           padding: CHART_CONFIG.STYLING.legendPadding,
